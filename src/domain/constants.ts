@@ -51,6 +51,10 @@ export const LATE_NIGHT_START = 22;
 export const LATE_NIGHT_END = 5;
 export const FLOW_RAPID_FOLLOWUP_SEC = 30;
 export const FLOW_BLOCK_GAP_MIN = 15;
+export const FLOW_SESSION_MIN_REQS = 3;
+export const FLOW_DEEP_SCORE = 75;
+export const FLOW_MODERATE_SCORE = 55;
+export const FLOW_SHALLOW_SCORE = 35;
 export const LONG_SESSION_REQS = 30;
 
 export const PRACTICE_LABELS: Record<string, string> = {

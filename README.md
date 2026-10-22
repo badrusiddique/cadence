@@ -2,7 +2,7 @@
 
 **Steady your AI coding practice.**
 
-Cadence is a local-first VS Code extension that reads your AI coding session logs and turns them into a calm, actionable dashboard — Watch, Quantify, Refine, Grow. Nothing leaves your machine.
+Cadence is a local-first VS Code extension that reads your AI coding session logs and turns them into a calm, actionable dashboard — Observe, Measure, Improve, Level Up. Nothing leaves your machine.
 
 <p align="center">
   <img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-0D8F6F">
@@ -14,10 +14,10 @@ Cadence is a local-first VS Code extension that reads your AI coding session log
 
 If you use Copilot, Claude Code, Codex, Cursor, OpenCode, or similar harnesses, your best coaching data is already on disk. Cadence makes it visible:
 
-- **Watch** — overview, session timeline, high-signal coding moments  
-- **Quantify** — throughput, budget estimates, weekly rhythm, inquiry patterns  
-- **Refine** — 45 habit signals, rule studio, field browser, skill match, context score  
-- **Grow** — practice focus, marks/XP, lifecycle mix, shareable snapshot  
+- **Observe** — dashboard, session timeline (with turn drill-down), coding moments  
+- **Measure** — output, burndown estimates, patterns, curiosity, flow, hub  
+- **Improve** — 45 habit signals, rule studio, signal lab, skill finder, context health  
+- **Level Up** — practice focus, achievements, lifecycle mix, shareable snapshot  
 
 Cadence is an original project. It explores the same problem space as Microsoft’s MIT-licensed [AI Engineer Coach](https://github.com/microsoft/ai-engineering-coach) but ships its own product identity, architecture, UI, and packaging. See [NOTICE](NOTICE).
 

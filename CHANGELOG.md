@@ -4,7 +4,9 @@
 
 - Initial public release of **Cadence**.
 - Local ingest for VS Code/Copilot, Cursor, Copilot CLI, Claude Code, Codex, OpenCode.
-- Dashboard IA: Watch / Quantify / Refine / Grow.
+- Dashboard IA aligned to Observe / Measure / Improve / Level Up (AEC surface, Cadence naming).
+- Fixed sidebar **Open Overview** / Sync (CSP + command bridge) and panel refresh after reload.
+- Flow scoring, harness comparison, session turn drill-down; chunk-lens light/dark theme; new lens icon.
 - 45 built-in habit signals with practice scoring.
 - Budget estimates enabled with non-billing disclaimer.
 - Chat participant `@cadence` and language-model tools.

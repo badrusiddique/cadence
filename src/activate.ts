@@ -11,6 +11,127 @@ import { CadencePanel } from './host/panel';
 
 let analyzer: Analyzer = new Analyzer([], new Map(), loadAllSignals({}));
 let output: vscode.OutputChannel;
+let sidebarProvider: CadenceSidebarProvider | undefined;
+
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+class CadenceSidebarProvider implements vscode.WebviewViewProvider {
+  private view: vscode.WebviewView | undefined;
+
+  constructor(private readonly extensionUri: vscode.Uri) {}
+
+  resolveWebviewView(webviewView: vscode.WebviewView): void {
+    this.view = webviewView;
+    webviewView.webview.options = {
+      enableScripts: true,
+      localResourceRoots: [vscode.Uri.joinPath(this.extensionUri, 'dist'), vscode.Uri.joinPath(this.extensionUri, 'assets')],
+    };
+    webviewView.webview.html = this.renderHtml(webviewView.webview);
+    webviewView.webview.onDidReceiveMessage((msg: { command?: string; type?: string }) => {
+      if (msg?.command === 'cadence.open' || msg?.type === 'open') {
+        void vscode.commands.executeCommand('cadence.open');
+        return;
+      }
+      if (msg?.command === 'cadence.reload' || msg?.type === 'reload') {
+        void vscode.commands.executeCommand('cadence.reload');
+      }
+    });
+  }
+
+  refresh(): void {
+    if (!this.view) return;
+    this.view.webview.html = this.renderHtml(this.view.webview);
+  }
+
+  private renderHtml(webview: vscode.Webview): string {
+    const nonce = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    const meta = analyzer.getMeta();
+    const harnesses = meta.harnesses || [];
+    const statsHtml = meta.sessionCount
+      ? `<div class="card">
+          <p class="label">Sessions synced</p>
+          <p class="value">${meta.sessionCount}</p>
+          <p class="note">${harnesses.map(escapeHtml).join(' · ') || 'No harnesses yet'}</p>
+        </div>`
+      : `<div class="card"><p class="note">No data yet — open the overview to sync local AI sessions.</p></div>`;
+
+    return `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${webview.cspSource} 'nonce-${nonce}'; script-src 'nonce-${nonce}';">
+<style nonce="${nonce}">
+  :root {
+    color-scheme: light dark;
+    --fg: var(--vscode-foreground);
+    --muted: var(--vscode-descriptionForeground);
+    --btn: var(--vscode-button-background);
+    --btn-fg: var(--vscode-button-foreground);
+    --btn-hover: var(--vscode-button-hoverBackground);
+    --sec: var(--vscode-button-secondaryBackground);
+    --sec-fg: var(--vscode-button-secondaryForeground);
+    --border: var(--vscode-panel-border, rgba(127,127,127,.35));
+    --card: var(--vscode-sideBar-background);
+  }
+  body {
+    font-family: var(--vscode-font-family);
+    color: var(--fg);
+    padding: 12px;
+    margin: 0;
+  }
+  h3 { margin: 0 0 4px; font-size: 13px; font-weight: 700; letter-spacing: .02em; }
+  .tag { color: var(--muted); font-size: 11px; margin-bottom: 12px; }
+  .card {
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 10px 12px;
+    margin-bottom: 12px;
+    background: color-mix(in srgb, var(--card) 92%, transparent);
+  }
+  .label { margin: 0; font-size: 10px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+  .value { margin: 4px 0; font-size: 22px; font-weight: 650; font-variant-numeric: tabular-nums; }
+  .note { margin: 0; font-size: 11px; color: var(--muted); line-height: 1.4; }
+  button {
+    width: 100%;
+    border: 0;
+    border-radius: 4px;
+    padding: 8px 10px;
+    margin-bottom: 8px;
+    cursor: pointer;
+    font: inherit;
+    font-size: 12px;
+    font-weight: 600;
+  }
+  #open { background: var(--btn); color: var(--btn-fg); }
+  #open:hover { background: var(--btn-hover); }
+  #reload { background: var(--sec); color: var(--sec-fg); }
+</style>
+</head>
+<body>
+  <h3>Cadence</h3>
+  <p class="tag">Local AI engineering insights</p>
+  <div id="content">${statsHtml}</div>
+  <button id="open" type="button">Open Overview</button>
+  <button id="reload" type="button">Sync Sessions</button>
+  <script nonce="${nonce}">
+    const vscode = acquireVsCodeApi();
+    document.getElementById('open').addEventListener('click', function () {
+      vscode.postMessage({ command: 'cadence.open' });
+    });
+    document.getElementById('reload').addEventListener('click', function () {
+      vscode.postMessage({ command: 'cadence.reload' });
+    });
+  </script>
+</body>
+</html>`;
+  }
+}
 
 async function reviewPendingTrust(context: vscode.ExtensionContext): Promise<void> {
   const pending = getPending();
@@ -59,7 +180,6 @@ async function reload(context: vscode.ExtensionContext, openPanel = false, bustC
       cancellable: false,
     },
     async (progress) => {
-      // First pass discovers pending local signals
       loadAllSignals({
         store: context.globalState,
         workspaceRoot,
@@ -81,6 +201,7 @@ async function reload(context: vscode.ExtensionContext, openPanel = false, bustC
       analyzer = new Analyzer(result.sessions, result.workspaces, signals);
       for (const err of result.errors) output.appendLine(`[${err.source}] ${err.message}`);
       output.appendLine(`Loaded ${result.sessions.length} sessions; ${signals.length} signals.`);
+      sidebarProvider?.refresh();
       if (openPanel || CadencePanel.current) {
         CadencePanel.show(context.extensionUri, analyzer, {
           trustStore: context.globalState,
@@ -96,6 +217,7 @@ export function activate(context: vscode.ExtensionContext): void {
   context.subscriptions.push(output);
 
   const getAnalyzer = () => analyzer;
+  sidebarProvider = new CadenceSidebarProvider(context.extensionUri);
 
   context.subscriptions.push(
     vscode.commands.registerCommand('cadence.open', async () => {
@@ -127,22 +249,8 @@ export function activate(context: vscode.ExtensionContext): void {
   registerLanguageModelTools(context, getAnalyzer);
 
   context.subscriptions.push(
-    vscode.window.registerWebviewViewProvider('cadence.overview', {
-      resolveWebviewView(webviewView) {
-        webviewView.webview.options = { enableScripts: true };
-        webviewView.webview.html = `<!DOCTYPE html><html><body style="font-family:var(--vscode-font-family);padding:1rem">
-          <h2 style="margin:0 0 .5rem">Cadence</h2>
-          <p style="opacity:.8">Open the full dashboard to watch sessions, quantify throughput, refine habits, and grow practice.</p>
-          <button id="open" style="margin-top:1rem;padding:.5rem 1rem">Open Overview</button>
-          <script>
-            const vscode = acquireVsCodeApi();
-            document.getElementById('open').onclick = () => vscode.postMessage({ type: 'open' });
-          </script>
-        </body></html>`;
-        webviewView.webview.onDidReceiveMessage((msg) => {
-          if (msg?.type === 'open') void vscode.commands.executeCommand('cadence.open');
-        });
-      },
+    vscode.window.registerWebviewViewProvider('cadence.overview', sidebarProvider, {
+      webviewOptions: { retainContextWhenHidden: true },
     }),
   );
 

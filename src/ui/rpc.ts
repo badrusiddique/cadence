@@ -15,6 +15,12 @@ declare global {
 
 const pending = new Map<string, Pending>();
 let vscodeApi: { postMessage: (msg: unknown) => void } | null = null;
+const refreshListeners = new Set<() => void>();
+
+export function onHostRefresh(fn: () => void): () => void {
+  refreshListeners.add(fn);
+  return () => refreshListeners.delete(fn);
+}
 
 function api() {
   if (vscodeApi) return vscodeApi;
@@ -35,7 +41,11 @@ function api() {
 }
 
 window.addEventListener('message', (event) => {
-  const data = event.data as RpcResponse;
+  const data = event.data as RpcResponse & { type?: string };
+  if (data?.type === 'cadence-refresh') {
+    for (const fn of refreshListeners) fn();
+    return;
+  }
   if (!data || typeof data.id !== 'string') return;
   const p = pending.get(data.id);
   if (!p) return;

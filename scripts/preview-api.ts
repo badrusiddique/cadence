@@ -30,6 +30,14 @@ export function handleRpc(method: string, params: Record<string, unknown> = {}):
       return analyzer.getOverview(filter);
     case 'getTimeline':
       return analyzer.getTimeline(filter);
+    case 'getSessionDetail':
+      return analyzer.getSessionDetail(String(params.sessionId || ''));
+    case 'getHarnessComparison':
+      return analyzer.getHarnessComparison(filter);
+    case 'getFlowState':
+      return analyzer.getFlowState(filter);
+    case 'getDailyActivity':
+      return analyzer.getDailyActivity(filter);
     case 'getMoments':
       return analyzer.getMoments(filter);
     case 'getThroughput':

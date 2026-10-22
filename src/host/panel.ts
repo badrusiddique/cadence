@@ -29,7 +29,17 @@ export class CadencePanel {
     this.panel.onDidDispose(() => {
       CadencePanel.current = undefined;
     });
-    this.panel.webview.onDidReceiveMessage(async (msg: RpcRequest) => {
+    this.panel.webview.onDidReceiveMessage(async (msg: RpcRequest & { type?: string; command?: string }) => {
+      // Sidebar-style command passthrough (also used by embedded chrome).
+      if (msg?.command === 'cadence.open' || msg?.type === 'open') {
+        void vscode.commands.executeCommand('cadence.open');
+        return;
+      }
+      if (msg?.command === 'cadence.reload' || msg?.type === 'reload') {
+        void vscode.commands.executeCommand('cadence.reload');
+        return;
+      }
+      if (!msg?.method || !msg?.id) return;
       try {
         const ctx: HostContext = {
           analyzer: this.analyzer,
@@ -37,8 +47,8 @@ export class CadencePanel {
           workspaceRoot: this.workspaceRoot,
         };
         const result = await handleRpc(ctx, msg.method, msg.params || {});
-        if (msg.method === 'copyMarkdown' && result && typeof result === 'object' && 'markdown' in (result as any)) {
-          await vscode.env.clipboard.writeText(String((result as any).markdown || ''));
+        if (msg.method === 'copyMarkdown' && result && typeof result === 'object' && 'markdown' in (result as object)) {
+          await vscode.env.clipboard.writeText(String((result as { markdown?: string }).markdown || ''));
         }
         await this.panel.webview.postMessage({ id: msg.id, ok: true, result });
       } catch (err) {
@@ -61,6 +71,9 @@ export class CadencePanel {
       CadencePanel.current.analyzer = analyzer;
       if (opts?.trustStore !== undefined) CadencePanel.current.trustStore = opts.trustStore;
       if (opts?.workspaceRoot !== undefined) CadencePanel.current.workspaceRoot = opts.workspaceRoot;
+      // Tell the webview to drop caches and re-query — previously the panel
+      // revealed with a stale UI after reload/open.
+      void CadencePanel.current.panel.webview.postMessage({ type: 'cadence-refresh' });
       return CadencePanel.current;
     }
     const panel = vscode.window.createWebviewPanel('cadence.overview', 'Cadence', vscode.ViewColumn.One, {

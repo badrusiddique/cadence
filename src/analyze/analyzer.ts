@@ -19,6 +19,7 @@ import { evaluateSignals, type SignalDefinition } from '../signals/engine';
 import { allRequests, dayKey, filterSessions } from './filter';
 import { buildPracticePack } from './learning';
 import { getHubDelivery, getSkillDrafts } from './hub';
+import { computeFlowState } from './flow';
 
 export class Analyzer {
   constructor(
@@ -59,9 +60,25 @@ export class Analyzer {
     const practice = this.getPracticeScores(filter);
     const activity = this.getDailyActivity(filter);
     const avgScore = practice.length ? Math.round(practice.reduce((n, p) => n + p.score, 0) / practice.length) : 0;
+    const habits = this.getHabits(filter).filter((h) => h.triggered);
+    const skills = this.getSkillCandidates(filter);
+    const flow = this.getFlowState(filter);
 
     const byHarness: Record<string, number> = {};
     for (const s of sessions) byHarness[s.harness] = (byHarness[s.harness] || 0) + 1;
+
+    const topHabit = habits.sort((a, b) => b.pct - a.pct)[0];
+    const recommendations = [
+      ...practice
+        .filter((p) => p.score < 70)
+        .slice(0, 2)
+        .map((p) => {
+          const tip = p.findings.find((f) => f.triggered)?.improvement;
+          return tip || `Raise ${p.label} — currently ${p.score}.`;
+        }),
+      ...flow.suggestions.slice(0, 1),
+      ...(skills[0] ? [`Repeated prompt (${skills[0].count}×): turn it into a skill.`] : []),
+    ].slice(0, 4);
 
     return {
       sessions: sessions.length,
@@ -75,6 +92,18 @@ export class Analyzer {
       activity,
       byHarness,
       topWorkspaces: this.topWorkspaces(sessions, 5),
+      habitCount: habits.length,
+      skillCount: skills.length,
+      flowScore: flow.overallFlowScore,
+      topPattern: topHabit?.name ?? null,
+      recommendations,
+      badges: {
+        sessions: sessions.length,
+        aiLoc,
+        habits: habits.length,
+        skills: skills.length,
+        budgetPct: this.getBudget(filter).pct,
+      },
     };
   }
 
@@ -100,16 +129,78 @@ export class Analyzer {
   }
 
   getTimeline(filter: DateFilter = {}) {
-    return this.scoped(filter).map((s) => ({
+    return this.scoped(filter)
+      .map((s) => ({
+        sessionId: s.sessionId,
+        workspaceId: s.workspaceId,
+        workspaceName: s.workspaceName,
+        harness: s.harness,
+        startedAt: s.startedAt,
+        endedAt: s.endedAt,
+        requestCount: s.requestCount,
+        aiLoc: s.requests.reduce((n, r) => n + r.aiCode.reduce((m, c) => m + c.lineCount, 0), 0),
+        models: [...new Set(s.requests.map((r) => r.modelId).filter(Boolean))],
+        title: s.title || s.requests[0]?.messageText.slice(0, 80) || s.sessionId,
+      }))
+      .sort((a, b) => (b.startedAt ?? 0) - (a.startedAt ?? 0));
+  }
+
+  getSessionDetail(sessionId: string) {
+    const s = this.sessions.find((x) => x.sessionId === sessionId);
+    if (!s) return null;
+    return {
       sessionId: s.sessionId,
-      workspaceId: s.workspaceId,
       workspaceName: s.workspaceName,
       harness: s.harness,
       startedAt: s.startedAt,
       endedAt: s.endedAt,
-      requestCount: s.requestCount,
-      title: s.title || s.requests[0]?.messageText.slice(0, 80) || s.sessionId,
-    }));
+      title: s.title || s.requests[0]?.messageText.slice(0, 120) || s.sessionId,
+      requestCount: s.requests.length,
+      requests: s.requests.map((r) => ({
+        requestId: r.requestId,
+        timestamp: r.timestamp,
+        messageText: r.messageText.slice(0, 240),
+        modelId: r.modelId,
+        toolsUsed: r.toolsUsed,
+        aiLoc: r.aiCode.reduce((n, c) => n + c.lineCount, 0),
+        isCanceled: r.isCanceled,
+        workType: r.workType,
+        totalElapsed: r.totalElapsed,
+      })),
+    };
+  }
+
+  getHarnessComparison(filter: DateFilter = {}) {
+    const sessions = this.scoped(filter);
+    const map = new Map<
+      string,
+      { harness: string; sessions: number; requests: number; aiLoc: number; canceled: number; tools: number }
+    >();
+    for (const s of sessions) {
+      if (!map.has(s.harness)) {
+        map.set(s.harness, { harness: s.harness, sessions: 0, requests: 0, aiLoc: 0, canceled: 0, tools: 0 });
+      }
+      const row = map.get(s.harness)!;
+      row.sessions += 1;
+      row.requests += s.requests.length;
+      for (const r of s.requests) {
+        row.aiLoc += r.aiCode.reduce((n, c) => n + c.lineCount, 0);
+        if (r.isCanceled) row.canceled += 1;
+        if (r.toolsUsed.length) row.tools += 1;
+      }
+    }
+    return [...map.values()]
+      .map((r) => ({
+        ...r,
+        cancelRate: r.requests ? r.canceled / r.requests : 0,
+        toolRate: r.requests ? r.tools / r.requests : 0,
+        locPerRequest: r.requests ? Math.round(r.aiLoc / r.requests) : 0,
+      }))
+      .sort((a, b) => b.requests - a.requests);
+  }
+
+  getFlowState(filter: DateFilter = {}) {
+    return computeFlowState(this.sessions, filter);
   }
 
   getThroughput(filter: DateFilter = {}) {

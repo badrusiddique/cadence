@@ -2,29 +2,43 @@
 
 Original request: reverse-engineer AI Engineer Coach (+ REA methodology), ship an original production-grade replica with elegant UX, adapter docs, marketplace packaging, and gap closure.
 
+## Source analysis status
+
+| Source | Pulled | Analyzed | Replicated |
+|---|---|---|---|
+| `microsoft/AI-Engineering-Coach` (~75k LOC TS) | Yes (`/tmp/source-analysis/ai-engineering-coach`) | Yes — pages, RPC map, ingest, rules, flow | **Clean-room rewrite**, not a line-for-line port |
+| `morluto/rea` | Yes (`/tmp/source-analysis/rea`) | Yes — evidence / doctor / MCP patterns | Methodology ported into Cadence |
+
+Cadence is intentionally original (~6–8k LOC). Capability surface tracks AEC’s Observe / Measure / Improve / Level Up IA. Deep optional paths (Copilot App SQLite, screenshot galleries, full DSL compiler, LLM quiz generation) are gap-filled with local equivalents.
+
+## Capability map
+
 | Requirement | Status | Where |
 |---|---|---|
-| Capability parity — Watch / Quantify / Refine / Grow | Done | `src/ui/app.ts` |
-| Hub (issue/PR relative spend) | Done (local-text derived) | `src/analyze/hub.ts` |
+| Observe — Dashboard / Timeline / Moments | Done | `src/ui/app.ts` + analyzer |
+| Measure — Output / Burndown / Patterns / Curiosity / Flow / Hub | Done | analyzer + `flow.ts` |
+| Improve — Anti-Patterns / Studio / Lab / Explorer / Skills / Context | Done | signals + pages |
+| Level Up — Practice / Achievements / Lifecycle / Share | Done | learning + export |
+| Session detail drill-down | Done | `getSessionDetail` |
+| Harness comparison | Done | `getHarnessComparison` |
+| Flow scoring | Done | `src/analyze/flow.ts` |
 | 45 habit signals | Done | `src/signals/catalog.ts` |
 | Rule Studio + live test + save | Done | Studio page + `savePersonalSignal` |
 | Signal Lab predicates | Done | `evaluateLabPredicate` |
-| Local signal trust gate | Done | `src/signals/trust.ts` + `cadence.reviewSignals` |
-| Learning / Practice quizzes | Done | `src/analyze/learning.ts` |
-| Skill Match drafts | Done | Hub/skills drafts |
+| Local signal trust gate | Done | `src/signals/trust.ts` |
 | Multi-harness ingest + Cursor | Done | `src/ingest/harnesses/*` |
-| Budget estimates ON + disclaimer | Done | Budget page / `estimated()` |
+| Sidebar Open Overview + Sync | Done | `src/activate.ts` CadenceSidebarProvider |
+| Panel refresh after reload | Done | `cadence-refresh` host message |
+| Light / dark theme | Done | `theme.css` + toggle |
 | Chat + LM tools | Done | `src/host/chat.ts`, `tools.ts` |
 | CLI + MCP + doctor | Done | `src/cli`, `src/mcp` |
 | Demo fixtures + preview server | Done | `npm run preview` |
 | Marketplace packaging docs | Done | `docs/MARKETPLACE.md` |
-| Adapter docs (signals, architecture) | Done | `docs/SIGNALS.md`, `ARCHITECTURE.md` |
 | Zero Microsoft branding / plagiarism | Done | Cadence identity + NOTICE |
-| Ingest cache | Done | `src/ingest/cache.ts` |
-| REA methodology | Done | evidence, doctor, MCP/CLI, skill |
 
-## Known follow-ons (not blockers)
+## Known intentional gaps (not silent stubs)
 
-- Deep GitHub Copilot App SQLite analytics (upstream optional DB) — Cadence uses local text linkage instead.
-- Screenshot “Coding Moments” binary gallery — Cadence shows LOC highlights.
-- Full SignalSpec detect-block parser for every DSL keyword — markdown authoring + JS match catalog cover built-ins; Lab covers ad-hoc predicates.
+- Deep GitHub Copilot App SQLite analytics — Cadence uses local text linkage (`getHub`).
+- Screenshot “Coding Moments” binary gallery — Cadence surfaces LOC highlights.
+- Full SignalSpec detect-block DSL compiler for every AEC keyword — built-in JS match catalog + Lab predicates cover the authoring loop.
+- LLM-generated learning quizzes / catalog install from awesome-copilot — Practice pack is local/heuristic.
