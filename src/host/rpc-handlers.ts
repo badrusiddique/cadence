@@ -51,7 +51,24 @@ export async function handleRpc(
     case 'getRhythm':
       return a.getRhythm(filter);
     case 'getInquiry':
+    case 'getCuriosity':
       return a.getInquiry(filter);
+    case 'getCodeProduction':
+      return a.getCodeProduction(filter);
+    case 'getPatternsDeep':
+      return a.getPatternsDeep(filter);
+    case 'getCuriosityDeep':
+      return a.getCuriosityDeep(filter);
+    case 'getContextDeep':
+      return a.getContextDeep(filter);
+    case 'getSkillCatalog':
+      return a.getSkillCatalog(filter);
+    case 'getRuleCoverage':
+      return a.getRuleCoverage(filter);
+    case 'getWellbeing':
+      return a.getWellbeing(filter);
+    case 'getInsights':
+      return a.getInsights(filter);
     case 'getHabits':
       return a.getHabits(filter);
     case 'getPracticeScores':

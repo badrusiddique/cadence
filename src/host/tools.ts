@@ -28,8 +28,17 @@ export function registerLanguageModelTools(context: vscode.ExtensionContext, get
   register('cadence_summary', (p) => getAnalyzer().getOverview(filterFrom(p)));
   register('cadence_activity', (p) => getAnalyzer().getDailyActivity(filterFrom(p)));
   register('cadence_budget', (p) => getAnalyzer().getBudget(filterFrom(p)));
-  register('cadence_throughput', (p) => getAnalyzer().getThroughput(filterFrom(p)));
-  register('cadence_flow', (p) => getAnalyzer().getRhythm(filterFrom(p)));
+  register('cadence_throughput', (p) => getAnalyzer().getCodeProduction(filterFrom(p)));
+  register('cadence_flow', (p) => getAnalyzer().getFlowState(filterFrom(p)));
   register('cadence_habits', (p) => getAnalyzer().getHabits(filterFrom(p)));
-  register('cadence_compare', (p) => getAnalyzer().getOverview(filterFrom(p)).byHarness);
+  register('cadence_compare', (p) => getAnalyzer().getHarnessComparison(filterFrom(p)));
+  register('cadence_patterns', (p) => getAnalyzer().getPatternsDeep(filterFrom(p)));
+  register('cadence_insights', (p) => getAnalyzer().getInsights(filterFrom(p)));
+  register('cadence_wellbeing', (p) => getAnalyzer().getWellbeing(filterFrom(p)));
+  register('cadence_sessions', (p) => {
+    if (typeof p.sessionId === 'string' && p.sessionId) return getAnalyzer().getSessionDetail(p.sessionId);
+    return getAnalyzer().getTimeline(filterFrom(p));
+  });
+  register('cadence_context', (p) => getAnalyzer().getContextDeep(filterFrom(p)));
+  register('cadence_curiosity', (p) => getAnalyzer().getCuriosityDeep(filterFrom(p)));
 }

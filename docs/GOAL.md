@@ -16,9 +16,18 @@ Cadence is intentionally original (~6–8k LOC). Capability surface tracks AEC�
 | Requirement | Status | Where |
 |---|---|---|
 | Observe — Dashboard / Timeline / Moments | Done | `src/ui/app.ts` + analyzer |
-| Measure — Output / Burndown / Patterns / Curiosity / Flow / Hub | Done | analyzer + `flow.ts` |
-| Improve — Anti-Patterns / Studio / Lab / Explorer / Skills / Context | Done | signals + pages |
+| Measure — Output / Burndown / Patterns / Curiosity / Flow / Hub | Done | `deep.ts` + Chart.js pages |
+| Improve — Anti-Patterns / Studio / Lab / Explorer / Skills / Context | Done | signals + Rules coverage + community skills |
 | Level Up — Practice / Achievements / Lifecycle / Share | Done | learning + export |
+| Output multi-mode charts | Done | `getCodeProduction` + Output seg modes |
+| Patterns Calendar / Projects | Done | `getPatternsDeep` tabs |
+| Curiosity channel charts | Done | `getCuriosityDeep` |
+| Context quality + management | Done | `getContextDeep` |
+| Skill community catalog | Done | `COMMUNITY_CATALOG` offline |
+| Current / All + workspace search | Done | rail filters |
+| Practice WoW + vibe role | Done | `withWow` / `getVibeRole` |
+| Expanded LM tools | Done | patterns/insights/wellbeing/sessions/context/curiosity |
+| AEC superiority (comparable surfaces) | Done | see `docs/QA-AEC-VS-CADENCE.md` |
 | Session detail drill-down | Done | `getSessionDetail` |
 | Harness comparison | Done | `getHarnessComparison` |
 | Flow scoring | Done | `src/analyze/flow.ts` |
@@ -41,4 +50,5 @@ Cadence is intentionally original (~6–8k LOC). Capability surface tracks AEC�
 - Deep GitHub Copilot App SQLite analytics — Cadence uses local text linkage (`getHub`).
 - Screenshot “Coding Moments” binary gallery — Cadence surfaces LOC highlights.
 - Full SignalSpec detect-block DSL compiler for every AEC keyword — built-in JS match catalog + Lab predicates cover the authoring loop.
-- LLM-generated learning quizzes / catalog install from awesome-copilot — Practice pack is local/heuristic.
+- LLM-generated learning quizzes / catalog install from awesome-copilot — Practice pack is local/heuristic; Skill Finder ships an offline community catalog with prompt matches.
+- AEC GitHub App cloud productivity DB — intentionally local-only via Hub text linkage.

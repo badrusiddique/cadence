@@ -236,6 +236,97 @@
             "workspaceId": { "type": "string" }
           }
         }
+      },
+      {
+        "name": "cadence_patterns",
+        "tags": ["cadence"],
+        "displayName": "Cadence: Work Patterns",
+        "modelDescription": "Work-hours heatmap, late-night/weekend balance, calendar intensity, and project mix.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "fromDate": { "type": "string" },
+            "toDate": { "type": "string" },
+            "workspaceId": { "type": "string" },
+            "harness": { "type": "string" }
+          }
+        }
+      },
+      {
+        "name": "cadence_insights",
+        "tags": ["cadence"],
+        "displayName": "Cadence: Insights Bundle",
+        "modelDescription": "Combined wellbeing, curiosity, context, and flow insights for coaching agents.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "fromDate": { "type": "string" },
+            "toDate": { "type": "string" },
+            "workspaceId": { "type": "string" },
+            "harness": { "type": "string" }
+          }
+        }
+      },
+      {
+        "name": "cadence_wellbeing",
+        "tags": ["cadence"],
+        "displayName": "Cadence: Wellbeing",
+        "modelDescription": "Late-night load, weekend ratio, flow score, and balance signals.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "fromDate": { "type": "string" },
+            "toDate": { "type": "string" },
+            "workspaceId": { "type": "string" },
+            "harness": { "type": "string" }
+          }
+        }
+      },
+      {
+        "name": "cadence_sessions",
+        "tags": ["cadence"],
+        "displayName": "Cadence: Sessions",
+        "modelDescription": "Timeline of sessions, or a single session detail when sessionId is provided.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "sessionId": { "type": "string", "description": "Optional session id for detail view" },
+            "fromDate": { "type": "string" },
+            "toDate": { "type": "string" },
+            "workspaceId": { "type": "string" },
+            "harness": { "type": "string" }
+          }
+        }
+      },
+      {
+        "name": "cadence_context",
+        "tags": ["cadence"],
+        "displayName": "Cadence: Context Health",
+        "modelDescription": "Context quality and management checks: files, instructions, skills, compaction, long prompts.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "fromDate": { "type": "string" },
+            "toDate": { "type": "string" },
+            "workspaceId": { "type": "string" },
+            "harness": { "type": "string" }
+          }
+        }
+      },
+      {
+        "name": "cadence_curiosity",
+        "tags": ["cadence"],
+        "displayName": "Cadence: Curiosity",
+        "modelDescription": "Inquiry vs action balance, research channels, and question samples.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "fromDate": { "type": "string" },
+            "toDate": { "type": "string" },
+            "workspaceId": { "type": "string" },
+            "harness": { "type": "string" }
+          }
+        }
       }
     ],
     "configuration": {

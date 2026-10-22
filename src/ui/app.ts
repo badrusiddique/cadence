@@ -1,5 +1,11 @@
 import { html, render } from './dom';
 import { onHostRefresh, rpc } from './rpc';
+import {
+  destroyAllCharts,
+  renderBarChart,
+  renderDoughnut,
+  renderLineChart,
+} from './charts';
 
 /** Nav mirrors AEC Observe / Measure / Improve / Level-up structure with Cadence naming. */
 type PageId =
@@ -32,6 +38,11 @@ interface Badges {
   skills?: number;
   budgetPct?: number;
 }
+
+type ChartJob =
+  | { kind: 'bar'; id: string; labels: string[]; datasets: Array<{ label: string; data: number[]; color?: string }>; stacked?: boolean }
+  | { kind: 'line'; id: string; labels: string[]; datasets: Array<{ label: string; data: number[]; color?: string }> }
+  | { kind: 'doughnut'; id: string; labels: string[]; values: number[] };
 
 const NAV: NavGroup[] = [
   {
@@ -77,9 +88,26 @@ const NAV: NavGroup[] = [
 
 const DOW = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
+const OUTPUT_MODES = [
+  { id: 'code-output', label: 'Code output' },
+  { id: 'by-workspace', label: 'By workspace' },
+  { id: 'by-harness', label: 'By harness' },
+  { id: 'by-model', label: 'By model' },
+  { id: 'by-language', label: 'By language' },
+  { id: 'net-output', label: 'Net output' },
+  { id: 'daily-model', label: 'Daily × model' },
+  { id: 'daily-harness', label: 'Daily × harness' },
+] as const;
+
 const state = {
   page: 'overview' as PageId,
   filter: { workspaceId: '', harness: '' },
+  wsScope: 'all' as 'current' | 'all',
+  wsSearch: '',
+  outputMode: 'code-output' as string,
+  patternsTab: 'work-hours' as 'work-hours' | 'calendar' | 'projects',
+  habitsTab: 'findings' as 'findings' | 'rules',
+  skillsTab: 'custom' as 'custom' | 'community',
   meta: null as any,
   badges: {} as Badges,
   topPattern: null as string | null,
@@ -90,6 +118,25 @@ const state = {
   theme: 'system' as 'system' | 'light' | 'dark',
   cache: new Map<string, unknown>(),
 };
+
+let chartJobs: ChartJob[] = [];
+
+function queueCharts(jobs: ChartJob[]) {
+  chartJobs = jobs;
+}
+
+function flushCharts() {
+  const jobs = chartJobs;
+  chartJobs = [];
+  requestAnimationFrame(() => {
+    destroyAllCharts();
+    for (const job of jobs) {
+      if (job.kind === 'bar') renderBarChart(job.id, job.labels, job.datasets, { stacked: job.stacked });
+      else if (job.kind === 'line') renderLineChart(job.id, job.labels, job.datasets);
+      else renderDoughnut(job.id, job.labels, job.values);
+    }
+  });
+}
 
 function readStoredTheme(): 'system' | 'light' | 'dark' {
   try {
@@ -119,10 +166,21 @@ function cycleTheme() {
 }
 
 function filterParams() {
+  let workspaceId = state.filter.workspaceId || undefined;
+  if (state.wsScope === 'current' && !workspaceId) {
+    workspaceId = state.meta?.currentWorkspaceId || undefined;
+  }
   return {
-    workspaceId: state.filter.workspaceId || undefined,
+    workspaceId,
     harness: state.filter.harness || undefined,
   };
+}
+
+function filteredWorkspaces() {
+  const list = state.meta?.workspaces || [];
+  const q = state.wsSearch.trim().toLowerCase();
+  if (!q) return list;
+  return list.filter((w: any) => w.name.toLowerCase().includes(q) || w.id.toLowerCase().includes(q));
 }
 
 async function loadMeta() {
@@ -171,8 +229,26 @@ function practiceStatus(score: number): { label: string; color: string } {
   return { label: 'At risk', color: 'var(--danger)' };
 }
 
+function wowSpan(wowPct: number | null | undefined) {
+  if (wowPct == null) return html`<span class="wow flat">WoW —</span>`;
+  if (wowPct > 0) return html`<span class="wow up">WoW +${wowPct}%</span>`;
+  if (wowPct < 0) return html`<span class="wow down">WoW ${wowPct}%</span>`;
+  return html`<span class="wow flat">WoW 0%</span>`;
+}
+
+function seg(options: Array<{ id: string; label: string }>, active: string, onPick: (id: string) => void) {
+  return html`
+    <div class="seg">
+      ${options.map(
+        (o) => html`<button class=${o.id === active ? 'active' : ''} onClick=${() => onPick(o.id)}>${o.label}</button>`,
+      )}
+    </div>
+  `;
+}
+
 function shell(content: ReturnType<typeof html>) {
   const themeIcon = state.theme === 'light' ? '☀' : state.theme === 'dark' ? '☾' : '◐';
+  const workspaces = filteredWorkspaces();
   return html`
     <aside id="rail">
       <div class="brand">
@@ -205,18 +281,51 @@ function shell(content: ReturnType<typeof html>) {
         `,
       )}
       <div class="filters">
+        <div class="ws-toggle">
+          <button
+            class=${state.wsScope === 'current' ? 'active' : ''}
+            onClick=${() => {
+              state.wsScope = 'current';
+              state.filter.workspaceId = '';
+              state.cache.clear();
+              void refresh();
+            }}
+          >Current</button>
+          <button
+            class=${state.wsScope === 'all' ? 'active' : ''}
+            onClick=${() => {
+              state.wsScope = 'all';
+              state.cache.clear();
+              void refresh();
+            }}
+          >All</button>
+        </div>
+        <input
+          class="search-input"
+          placeholder="Search workspaces…"
+          value=${state.wsSearch}
+          onInput=${(e: Event) => {
+            state.wsSearch = (e.target as HTMLInputElement).value;
+            paint();
+          }}
+        />
         <label>
           Workspace
           <select
             value=${state.filter.workspaceId}
             onChange=${(e: Event) => {
               state.filter.workspaceId = (e.target as HTMLSelectElement).value;
+              if (state.filter.workspaceId) state.wsScope = 'all';
               state.cache.clear();
               void refresh();
             }}
           >
-            <option value="">All workspaces</option>
-            ${(state.meta?.workspaces || []).map((w: any) => html`<option value=${w.id}>${w.name}</option>`)}
+            <option value="">
+              ${state.wsScope === 'current'
+                ? `Current (${state.meta?.workspaces?.find((w: any) => w.id === state.meta?.currentWorkspaceId)?.name || 'workspace'})`
+                : 'All workspaces'}
+            </option>
+            ${workspaces.map((w: any) => html`<option value=${w.id}>${w.name}</option>`)}
           </select>
         </label>
         <label>
@@ -254,6 +363,7 @@ function header(title: string, subtitle: string, pill?: string) {
 
 async function renderPage() {
   let body: ReturnType<typeof html> = html`<div class="loading"><h2>Listening for sessions…</h2></div>`;
+  queueCharts([]);
 
   if (state.page === 'overview') body = await pageOverview();
   else if (state.page === 'sessions') body = await pageSessions();
@@ -284,12 +394,40 @@ async function pageOverview() {
   state.badges = { ...(data.badges || {}) };
   state.topPattern = data.topPattern || null;
   state.notice = data.sessions === 0 ? 'No sessions in range — enable Demo Mode or sync local harness logs.' : '';
-  const maxReq = Math.max(1, ...(data.activity || []).map((a: any) => a.requests));
+
+  const activity = data.activity || [];
+  const harnessEntries = Object.entries(data.byHarness || {}) as [string, number][];
+  queueCharts([
+    {
+      kind: 'bar',
+      id: 'chart-overview-activity',
+      labels: activity.slice(-28).map((a: any) => a.date.slice(5)),
+      datasets: [
+        { label: 'Requests', data: activity.slice(-28).map((a: any) => a.requests) },
+        { label: 'AI LOC', data: activity.slice(-28).map((a: any) => a.aiLoc || 0), color: '#33cc94' },
+      ],
+    },
+    {
+      kind: 'doughnut',
+      id: 'chart-overview-harness',
+      labels: harnessEntries.map(([k]) => k),
+      values: harnessEntries.map(([, v]) => v),
+    },
+  ]);
 
   return html`
     <div class="page">
-      ${header('Dashboard', 'Practice scores, activity, and where your agent hours go.', `Score ${data.practiceScore}`)}
+      ${header('Dashboard', 'Practice scores with week-over-week deltas, activity, and harness mix.', `Score ${data.practiceScore}`)}
       ${state.notice ? html`<div class="banner">${state.notice}</div>` : null}
+      ${data.vibe
+        ? html`<div class="vibe-banner">
+            <div>
+              <strong>${data.vibe.title}</strong>
+              <div class="muted">${data.vibe.reason}</div>
+            </div>
+            <div class="pill">Vibe ${data.vibe.score}</div>
+          </div>`
+        : null}
       <div class="grid-4">
         ${(data.practice || []).slice(0, 4).map((p: any) => {
           const st = practiceStatus(p.score);
@@ -299,7 +437,7 @@ async function pageOverview() {
               <div class="ring-wrap">
                 <div class="ring" style=${`--p:${p.score};--ring-color:${st.color}`} data-score=${p.score}></div>
                 <div class="meta">
-                  <strong>${p.label}</strong>
+                  <strong>${p.label} ${wowSpan(p.wowPct)}</strong>
                   <div class="status">${st.label}</div>
                 </div>
               </div>
@@ -316,44 +454,38 @@ async function pageOverview() {
             </ul>
           </section>`
         : null}
-      <section class="panel">
-        <h2>Daily activity</h2>
-        <div class="metric-row" style="margin-bottom:8px">
-          <div class="metric"><div class="label">Requests</div><div class="value mono">${data.requests}</div></div>
-          <div class="metric"><div class="label">Sessions</div><div class="value mono">${data.sessions}</div></div>
-          <div class="metric"><div class="label">AI LOC</div><div class="value mono">${fmtLoc(data.aiLoc)}</div></div>
-          <div class="metric"><div class="label">Flow</div><div class="value mono">${data.flowScore}</div></div>
-        </div>
-        <div class="spark">
-          ${(data.activity || []).slice(-28).map(
-            (a: any) => html`<span style=${`height:${Math.max(6, (a.requests / maxReq) * 100)}%`} title=${`${a.date}: ${a.requests} req`}></span>`,
-          )}
-        </div>
-      </section>
       <div class="grid-2">
         <section class="panel">
-          <h2>Top workspaces</h2>
-          <table>
-            <thead><tr><th>Workspace</th><th>Sessions</th><th>Requests</th></tr></thead>
-            <tbody>
-              ${(data.topWorkspaces || []).map(
-                (w: any) => html`<tr><td>${w.name}</td><td class="mono">${w.sessions}</td><td class="mono">${w.requests}</td></tr>`,
-              )}
-            </tbody>
-          </table>
+          <h2>Daily activity</h2>
+          <div class="metric-row" style="margin-bottom:8px">
+            <div class="metric"><div class="label">Requests</div><div class="value mono">${data.requests}</div></div>
+            <div class="metric"><div class="label">Sessions</div><div class="value mono">${data.sessions}</div></div>
+            <div class="metric"><div class="label">AI LOC</div><div class="value mono">${fmtLoc(data.aiLoc)}</div></div>
+            <div class="metric"><div class="label">Flow</div><div class="value mono">${data.flowScore}</div></div>
+          </div>
+          <div class="chart-box"><canvas id="chart-overview-activity"></canvas></div>
         </section>
         <section class="panel">
           <h2>Harness mix</h2>
-          <table>
-            <thead><tr><th>Harness</th><th>Sessions</th></tr></thead>
-            <tbody>
-              ${Object.entries(data.byHarness || {}).map(
-                ([name, count]) => html`<tr><td>${name}</td><td class="mono">${count as number}</td></tr>`,
-              )}
-            </tbody>
-          </table>
+          <div class="chart-box short"><canvas id="chart-overview-harness"></canvas></div>
+          ${(data.skillPreview || []).length
+            ? html`<div class="list" style="margin-top:10px">
+                ${data.skillPreview.map((s: any) => html`<article><strong>${s.count}×</strong> ${s.sample}</article>`)}
+              </div>`
+            : null}
         </section>
       </div>
+      <section class="panel">
+        <h2>Top workspaces</h2>
+        <table>
+          <thead><tr><th>Workspace</th><th>Sessions</th><th>Requests</th></tr></thead>
+          <tbody>
+            ${(data.topWorkspaces || []).map(
+              (w: any) => html`<tr><td>${w.name}</td><td class="mono">${w.sessions}</td><td class="mono">${w.requests}</td></tr>`,
+            )}
+          </tbody>
+        </table>
+      </section>
     </div>
   `;
 }
@@ -437,54 +569,102 @@ async function pageMoments() {
 }
 
 async function pageThroughput() {
-  const data = await query<any>('getThroughput');
+  const data = await query<any>('getCodeProduction');
   const compare = await query<any[]>('getHarnessComparison');
-  state.badges = { ...state.badges, aiLoc: data.aiLoc };
+  state.badges = { ...state.badges, aiLoc: data.summary.totalAiLoc };
+
+  const jobs: ChartJob[] = [];
+  const mode = state.outputMode;
+  if (mode === 'code-output' || mode === 'net-output') {
+    jobs.push({
+      kind: 'bar',
+      id: 'chart-output',
+      labels: data.dailyTimeline.labels.map((d: string) => d.slice(5)),
+      datasets: [
+        { label: 'AI LOC', data: data.dailyTimeline.aiLoc },
+        { label: 'User LOC', data: data.dailyTimeline.userLoc, color: '#519eec' },
+      ],
+      stacked: mode === 'net-output',
+    });
+  } else if (mode === 'by-language') {
+    jobs.push({
+      kind: 'doughnut',
+      id: 'chart-output',
+      labels: data.byLanguage.labels,
+      values: data.byLanguage.aiLoc,
+    });
+  } else if (mode === 'by-workspace') {
+    jobs.push({
+      kind: 'bar',
+      id: 'chart-output',
+      labels: data.byWorkspace.labels,
+      datasets: [{ label: 'AI LOC', data: data.byWorkspace.aiLoc }],
+    });
+  } else if (mode === 'by-harness') {
+    jobs.push({
+      kind: 'bar',
+      id: 'chart-output',
+      labels: data.byHarness.labels,
+      datasets: [{ label: 'AI LOC', data: data.byHarness.aiLoc }],
+    });
+  } else if (mode === 'by-model') {
+    jobs.push({
+      kind: 'doughnut',
+      id: 'chart-output',
+      labels: data.byModel.labels,
+      values: data.byModel.aiLoc,
+    });
+  } else if (mode === 'daily-model') {
+    jobs.push({
+      kind: 'line',
+      id: 'chart-output',
+      labels: data.dailyByModel.labels.map((d: string) => d.slice(5)),
+      datasets: data.dailyByModel.series.map((s: any) => ({ label: s.name, data: s.values })),
+    });
+  } else if (mode === 'daily-harness') {
+    jobs.push({
+      kind: 'line',
+      id: 'chart-output',
+      labels: data.dailyByHarness.labels.map((d: string) => d.slice(5)),
+      datasets: data.dailyByHarness.series.map((s: any) => ({ label: s.name, data: s.values })),
+    });
+  }
+  queueCharts(jobs);
+
   return html`
     <div class="page">
-      ${header('Output', 'AI-generated code volume by language, model, and harness.')}
-      <div class="banner ok">${data.estimateNote}</div>
+      ${header('Output', 'Multi-mode code production — AI vs user, workspace, harness, model, language.', `${fmtLoc(data.summary.totalAiLoc)} AI LOC`)}
+      <div class="banner ok">Local LOC estimates from session transcripts — not billing data.</div>
       <div class="metric-row">
-        <div class="metric"><div class="label">AI LOC</div><div class="value mono">${fmtLoc(data.aiLoc)}</div></div>
-        <div class="metric"><div class="label">User LOC</div><div class="value mono">${fmtLoc(data.userLoc)}</div></div>
-        <div class="metric"><div class="label">Harnesses</div><div class="value mono">${compare.length}</div></div>
-        <div class="metric"><div class="label">Languages</div><div class="value mono">${Object.keys(data.byLanguage || {}).length}</div></div>
+        <div class="metric"><div class="label">AI LOC</div><div class="value mono">${fmtLoc(data.summary.totalAiLoc)}</div></div>
+        <div class="metric"><div class="label">User LOC</div><div class="value mono">${fmtLoc(data.summary.totalUserLoc)}</div></div>
+        <div class="metric"><div class="label">AI ratio</div><div class="value mono">${Math.round(data.summary.aiRatio * 100)}%</div></div>
+        <div class="metric"><div class="label">Blocks</div><div class="value mono">${data.summary.aiBlocks}</div></div>
       </div>
-      <div class="grid-2">
-        <section class="panel">
-          <h2>By language</h2>
-          <table>
-            <tbody>
-              ${Object.entries(data.byLanguage || {})
-                .sort((a, b) => (b[1] as number) - (a[1] as number))
-                .map(([k, v]) => html`<tr><td>${k}</td><td class="mono">${v as number}</td></tr>`)}
-            </tbody>
-          </table>
-        </section>
-        <section class="panel">
-          <h2>Harness comparison</h2>
-          <table>
-            <thead><tr><th>Harness</th><th>Req</th><th>LOC</th><th>Cancel</th></tr></thead>
-            <tbody>
-              ${compare.map(
-                (r: any) => html`<tr>
-                  <td>${r.harness}</td>
-                  <td class="mono">${r.requests}</td>
-                  <td class="mono">${fmtLoc(r.aiLoc)}</td>
-                  <td class="mono">${Math.round(r.cancelRate * 100)}%</td>
-                </tr>`,
-              )}
-            </tbody>
-          </table>
-        </section>
-      </div>
+      ${seg(
+        OUTPUT_MODES.map((m) => ({ id: m.id, label: m.label })),
+        state.outputMode,
+        (id) => {
+          state.outputMode = id;
+          void refresh();
+        },
+      )}
       <section class="panel">
-        <h2>By model</h2>
+        <h2>${OUTPUT_MODES.find((m) => m.id === state.outputMode)?.label || 'Output'}</h2>
+        <div class="chart-box tall"><canvas id="chart-output"></canvas></div>
+      </section>
+      <section class="panel">
+        <h2>Harness comparison</h2>
         <table>
-          <thead><tr><th>Model</th><th>Req</th><th>LOC</th></tr></thead>
+          <thead><tr><th>Harness</th><th>Req</th><th>LOC</th><th>Cancel</th></tr></thead>
           <tbody>
-            ${Object.entries(data.byModel || {}).map(
-              ([k, v]: any) => html`<tr><td>${k}</td><td class="mono">${v.requests}</td><td class="mono">${v.aiLoc}</td></tr>`,
+            ${compare.map(
+              (r: any) => html`<tr>
+                <td>${r.harness}</td>
+                <td class="mono">${r.requests}</td>
+                <td class="mono">${fmtLoc(r.aiLoc)}</td>
+                <td class="mono">${Math.round(r.cancelRate * 100)}%</td>
+              </tr>`,
             )}
           </tbody>
         </table>
@@ -496,10 +676,18 @@ async function pageThroughput() {
 async function pageBudget() {
   const data = await query<any>('getBudget');
   state.badges = { ...state.badges, budgetPct: data.pct };
-  const maxDay = Math.max(1, ...(data.daily || []).map((d: any) => d.credits));
+  const daily = data.daily || [];
+  queueCharts([
+    {
+      kind: 'bar',
+      id: 'chart-budget',
+      labels: daily.map((d: any) => String(d.date).slice(5)),
+      datasets: [{ label: 'Credits', data: daily.map((d: any) => d.credits), color: '#eb6847' }],
+    },
+  ]);
   return html`
     <div class="page">
-      ${header('Burndown', 'Local credit and token estimates for the selected range.', `${data.pct}% used`)}
+      ${header('Burndown', 'Local credit and token estimates for the selected range — always on.', `${data.pct}% used`)}
       <div class="banner">${data.disclaimer}</div>
       <div class="metric-row">
         <div class="metric"><div class="label">Credits used</div><div class="value mono">${data.creditsUsed}</div></div>
@@ -509,11 +697,7 @@ async function pageBudget() {
       </div>
       <section class="panel">
         <h2>Daily burn</h2>
-        <div class="spark">
-          ${(data.daily || []).map(
-            (d: any) => html`<span style=${`height:${Math.max(6, (d.credits / maxDay) * 100)}%;background:var(--chart-3)`} title=${`${d.date}: ${d.credits}`}></span>`,
-          )}
-        </div>
+        <div class="chart-box"><canvas id="chart-budget"></canvas></div>
       </section>
       <section class="panel">
         <h2>By model</h2>
@@ -531,61 +715,179 @@ async function pageBudget() {
 }
 
 async function pageRhythm() {
-  const data = await query<any>('getRhythm');
+  const data = await query<any>('getPatternsDeep');
   const max = Math.max(1, ...data.heatmap.flat());
+  const jobs: ChartJob[] = [];
+  if (state.patternsTab === 'work-hours') {
+    jobs.push({
+      kind: 'bar',
+      id: 'chart-patterns',
+      labels: data.hourly.map((_: number, h: number) => `${h}`),
+      datasets: [{ label: 'Requests', data: data.hourly, color: '#f59e0b' }],
+    });
+  } else if (state.patternsTab === 'calendar') {
+    jobs.push({
+      kind: 'line',
+      id: 'chart-patterns',
+      labels: data.calendar.map((c: any) => c.date.slice(5)),
+      datasets: [
+        { label: 'Requests', data: data.calendar.map((c: any) => c.requests) },
+        { label: 'AI LOC', data: data.calendar.map((c: any) => c.aiLoc), color: '#33cc94' },
+      ],
+    });
+  } else {
+    jobs.push({
+      kind: 'bar',
+      id: 'chart-patterns',
+      labels: data.projects.map((p: any) => p.workspace),
+      datasets: [
+        { label: 'Requests', data: data.projects.map((p: any) => p.requests) },
+        { label: 'Sessions', data: data.projects.map((p: any) => p.sessions), color: '#519eec' },
+      ],
+    });
+  }
+  queueCharts(jobs);
+
   return html`
     <div class="page">
-      ${header('Patterns', 'When you work with agents — heatmap and balance.', `Balance ${data.balanceScore}`)}
+      ${header('Patterns', 'Work-hours heatmap, calendar intensity, and project mix.', `Balance ${data.balanceScore}`)}
       <div class="metric-row">
         <div class="metric"><div class="label">Late-night</div><div class="value mono">${Math.round(data.lateNightRatio * 100)}%</div></div>
         <div class="metric"><div class="label">Weekend</div><div class="value mono">${Math.round(data.weekendRatio * 100)}%</div></div>
-        <div class="metric"><div class="label">Samples</div><div class="value mono">${data.total}</div></div>
+        <div class="metric"><div class="label">Peak hour</div><div class="value mono">${data.peakHour != null ? `${data.peakHour}:00` : '—'}</div></div>
         <div class="metric"><div class="label">Balance</div><div class="value mono">${data.balanceScore}</div></div>
       </div>
-      <section class="panel">
-        <h2>7×24 activity</h2>
-        <div class="heatmap">
-          ${data.heatmap.map(
-            (row: number[], dow: number) => html`
-              <div class="hm-label">${DOW[dow]}</div>
-              ${row.map((v) => {
-                const alpha = 0.08 + (v / max) * 0.9;
-                return html`<div class="hm-cell" style=${`background: rgba(245,158,11,${alpha})`} title=${String(v)}></div>`;
-              })}
-            `,
-          )}
-        </div>
-      </section>
+      ${seg(
+        [
+          { id: 'work-hours', label: 'Work hours' },
+          { id: 'calendar', label: 'Calendar' },
+          { id: 'projects', label: 'Projects' },
+        ],
+        state.patternsTab,
+        (id) => {
+          state.patternsTab = id as typeof state.patternsTab;
+          void refresh();
+        },
+      )}
+      ${state.patternsTab === 'work-hours'
+        ? html`<section class="panel">
+            <h2>7×24 activity</h2>
+            <div class="heatmap">
+              ${data.heatmap.map(
+                (row: number[], dow: number) => html`
+                  <div class="hm-label">${DOW[dow]}</div>
+                  ${row.map((v) => {
+                    const alpha = 0.08 + (v / max) * 0.9;
+                    return html`<div class="hm-cell" style=${`background: rgba(245,158,11,${alpha})`} title=${String(v)}></div>`;
+                  })}
+                `,
+              )}
+            </div>
+            <div class="chart-box" style="margin-top:14px"><canvas id="chart-patterns"></canvas></div>
+          </section>`
+        : html`<section class="panel">
+            <h2>${state.patternsTab === 'calendar' ? 'Calendar intensity' : 'Projects'}</h2>
+            <div class="chart-box tall"><canvas id="chart-patterns"></canvas></div>
+            ${state.patternsTab === 'projects'
+              ? html`<table style="margin-top:12px">
+                  <thead><tr><th>Workspace</th><th>Sessions</th><th>Requests</th><th>AI LOC</th></tr></thead>
+                  <tbody>
+                    ${data.projects.map(
+                      (p: any) => html`<tr>
+                        <td>${p.workspace}</td>
+                        <td class="mono">${p.sessions}</td>
+                        <td class="mono">${p.requests}</td>
+                        <td class="mono">${fmtLoc(p.aiLoc)}</td>
+                      </tr>`,
+                    )}
+                  </tbody>
+                </table>`
+              : null}
+          </section>`}
     </div>
   `;
 }
 
 async function pageInquiry() {
-  const data = await query<any>('getInquiry');
+  const data = await query<any>('getCuriosityDeep');
+  queueCharts([
+    {
+      kind: 'doughnut',
+      id: 'chart-curiosity-mix',
+      labels: ['Direct Q', 'Web', 'Repo', 'Action'],
+      values: [data.counts.direct, data.counts.web, data.counts.repository, data.counts.action],
+    },
+    {
+      kind: 'line',
+      id: 'chart-curiosity-daily',
+      labels: data.daily.map((d: any) => d.date.slice(5)),
+      datasets: [
+        { label: 'Direct', data: data.daily.map((d: any) => d.direct) },
+        { label: 'Web', data: data.daily.map((d: any) => d.web), color: '#519eec' },
+        { label: 'Repo', data: data.daily.map((d: any) => d.repository), color: '#33cc94' },
+        { label: 'Action', data: data.daily.map((d: any) => d.action), color: '#eb6847' },
+      ],
+    },
+  ]);
   return html`
     <div class="page">
-      ${header('Curiosity', 'Questions and investigation patterns in your sessions.')}
+      ${header('Curiosity', 'Inquiry vs action balance with research channels and language heat.', data.balance.label)}
       <div class="metric-row">
         <div class="metric"><div class="label">Inquiry sessions</div><div class="value mono">${data.inquirySessions}</div></div>
         <div class="metric"><div class="label">Questions</div><div class="value mono">${data.questionRequests}</div></div>
         <div class="metric"><div class="label">Investigations</div><div class="value mono">${data.investigationRequests}</div></div>
-        <div class="metric"><div class="label">Langs touched</div><div class="value mono">${Object.keys(data.languages || {}).length}</div></div>
+        <div class="metric"><div class="label">Balance</div><div class="value mono">${Math.round(data.balance.inquiryShare * 100)}% inquire</div></div>
       </div>
-      <section class="panel">
-        <h2>Recent questions</h2>
-        <div class="list">
-          ${(data.topQuestions || []).length === 0
-            ? html`<article class="muted">No question-shaped prompts in range.</article>`
-            : data.topQuestions.map((q: string) => html`<article>${q}</article>`)}
-        </div>
-      </section>
+      ${(data.suggestions || []).length
+        ? html`<section class="panel"><ul class="recs">${data.suggestions.map((s: string) => html`<li>${s}</li>`)}</ul></section>`
+        : null}
+      <div class="grid-2">
+        <section class="panel">
+          <h2>Channel mix</h2>
+          <div class="chart-box short"><canvas id="chart-curiosity-mix"></canvas></div>
+        </section>
+        <section class="panel">
+          <h2>Daily curiosity</h2>
+          <div class="chart-box"><canvas id="chart-curiosity-daily"></canvas></div>
+        </section>
+      </div>
+      <div class="grid-2">
+        <section class="panel">
+          <h2>Languages touched by inquiry</h2>
+          <table>
+            <thead><tr><th>Language</th><th>Inquiry</th><th>Sessions</th></tr></thead>
+            <tbody>
+              ${(data.languages || []).length === 0
+                ? html`<tr><td colspan="3" class="muted">No language-tagged inquiry yet.</td></tr>`
+                : data.languages.map(
+                    (l: any) => html`<tr><td>${l.language}</td><td class="mono">${l.inquiry}</td><td class="mono">${l.sessions}</td></tr>`,
+                  )}
+            </tbody>
+          </table>
+        </section>
+        <section class="panel">
+          <h2>Recent questions</h2>
+          <div class="list">
+            ${(data.topQuestions || []).length === 0
+              ? html`<article class="muted">No question-shaped prompts in range.</article>`
+              : data.topQuestions.map((q: string) => html`<article>${q}</article>`)}
+          </div>
+        </section>
+      </div>
     </div>
   `;
 }
 
 async function pageFlow() {
   const data = await query<any>('getFlowState');
-  const maxH = Math.max(1, ...data.hourlyFlow);
+  queueCharts([
+    {
+      kind: 'bar',
+      id: 'chart-flow',
+      labels: data.hourlyFlow.map((_: number, h: number) => `${h}`),
+      datasets: [{ label: 'Flow weight', data: data.hourlyFlow, color: '#3cb4dd' }],
+    },
+  ]);
   return html`
     <div class="page">
       ${header('Flow', 'Deep-work scoring from follow-up latency and session structure.', `Score ${data.overallFlowScore}`)}
@@ -600,11 +902,7 @@ async function pageFlow() {
         : null}
       <section class="panel">
         <h2>Hourly flow${data.bestHour != null ? ` · peak ${data.bestHour}:00` : ''}</h2>
-        <div class="spark">
-          ${data.hourlyFlow.map(
-            (v: number, h: number) => html`<span style=${`height:${Math.max(4, (v / maxH) * 100)}%;background:var(--chart-1)`} title=${`${h}:00 → ${v}`}></span>`,
-          )}
-        </div>
+        <div class="chart-box"><canvas id="chart-flow"></canvas></div>
       </section>
       <section class="panel">
         <h2>Days</h2>
@@ -631,27 +929,90 @@ async function pageFlow() {
 
 async function pageHabits() {
   const findings = await query<any[]>('getHabits');
+  const coverage = await query<any>('getRuleCoverage');
+  const catalog = await query<any[]>('listSignals');
   const triggered = findings.filter((f) => f.triggered);
   state.badges = { ...state.badges, habits: triggered.length };
+
   return html`
     <div class="page">
-      ${header('Anti-Patterns', 'Signals that help you refine agentic engineering practice.', `${triggered.length} active`)}
-      <section class="panel">
-        <table>
-          <thead><tr><th>Signal</th><th>Group</th><th>Severity</th><th>Finding</th><th>Improve</th></tr></thead>
-          <tbody>
-            ${findings.map(
-              (f) => html`<tr>
-                <td><strong>${f.name}</strong></td>
-                <td>${f.group}</td>
-                <td><span class=${`sev sev-${f.severity}`}>${f.severity}</span></td>
-                <td>${f.triggered ? f.message : html`<span class="muted">Clear</span>`}</td>
-                <td class="muted">${f.triggered ? f.improvement : '—'}</td>
-              </tr>`,
-            )}
-          </tbody>
-        </table>
-      </section>
+      ${header('Anti-Patterns', 'Findings plus a Rules catalog with coverage across workspaces.', `${triggered.length} active`)}
+      ${seg(
+        [
+          { id: 'findings', label: 'Findings' },
+          { id: 'rules', label: 'Rules' },
+        ],
+        state.habitsTab,
+        (id) => {
+          state.habitsTab = id as typeof state.habitsTab;
+          void refresh();
+        },
+      )}
+      ${state.habitsTab === 'findings'
+        ? html`<section class="panel">
+            <table>
+              <thead><tr><th>Signal</th><th>Group</th><th>Severity</th><th>Finding</th><th>Improve</th></tr></thead>
+              <tbody>
+                ${findings.map(
+                  (f) => html`<tr>
+                    <td><strong>${f.name}</strong></td>
+                    <td>${f.group}</td>
+                    <td><span class=${`sev sev-${f.severity}`}>${f.severity}</span></td>
+                    <td>${f.triggered ? f.message : html`<span class="muted">Clear</span>`}</td>
+                    <td class="muted">${f.triggered ? f.improvement : '—'}</td>
+                  </tr>`,
+                )}
+              </tbody>
+            </table>
+          </section>`
+        : html`
+            <section class="panel">
+              <h2>Catalog actions</h2>
+              <p class="muted" style="margin-bottom:10px">Open Rule Studio to author, live-test, or save SignalSpec files. Coverage below attributes findings across workspaces.</p>
+              <button class="btn" onClick=${() => setPage('studio')}>Open Rule Studio</button>
+              <button class="btn secondary" style="margin-left:8px" onClick=${() => setPage('lab')}>Signal Lab</button>
+            </section>
+            <section class="panel">
+              <h2>Installed signals (${catalog.length})</h2>
+              <table>
+                <thead><tr><th>Name</th><th>Group</th><th>Layer</th><th>Triggered</th></tr></thead>
+                <tbody>
+                  ${catalog.map((s: any) => {
+                    const f = findings.find((x) => x.id === s.id);
+                    return html`<tr>
+                      <td>${s.name}</td>
+                      <td>${s.group}</td>
+                      <td class="mono">${s.layer}</td>
+                      <td>${f?.triggered ? html`<span class="sev sev-medium">yes</span>` : html`<span class="muted">no</span>`}</td>
+                    </tr>`;
+                  })}
+                </tbody>
+              </table>
+            </section>
+            <section class="panel">
+              <h2>Coverage matrix</h2>
+              <div class="matrix">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Rule</th>
+                      ${(coverage.workspaces || []).map((w: string) => html`<th>${w}</th>`)}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${(coverage.rules || []).map(
+                      (r: any) => html`<tr>
+                        <td>${r.name}</td>
+                        ${(coverage.workspaces || []).map(
+                          (w: string) => html`<td class="mono">${coverage.matrix?.[r.id]?.[w] ?? 0}</td>`,
+                        )}
+                      </tr>`,
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </section>
+          `}
     </div>
   `;
 }
@@ -789,6 +1150,14 @@ async function pageLab() {
 
 async function pageHub() {
   const data = await query<any>('getHub');
+  queueCharts([
+    {
+      kind: 'bar',
+      id: 'chart-hub',
+      labels: (data.issueRows || []).slice(0, 8).map((r: any) => r.issue),
+      datasets: [{ label: 'Requests', data: (data.issueRows || []).slice(0, 8).map((r: any) => r.requests), color: '#b675d7' }],
+    },
+  ]);
   return html`
     <div class="page">
       ${header('Hub', 'Issue/PR linkage and Copilot App signals from local session text.')}
@@ -801,7 +1170,10 @@ async function pageHub() {
       </div>
       <section class="panel">
         <h2>Relative issue spend</h2>
-        <table>
+        ${(data.issueRows || []).length
+          ? html`<div class="chart-box short"><canvas id="chart-hub"></canvas></div>`
+          : null}
+        <table style="margin-top:12px">
           <thead><tr><th>Issue</th><th>Sessions</th><th>Requests</th><th>%</th></tr></thead>
           <tbody>
             ${(data.issueRows || []).length === 0
@@ -840,43 +1212,113 @@ async function pageFields() {
 }
 
 async function pageSkills() {
-  const rows = await query<any[]>('getSkillCandidates');
-  state.badges = { ...state.badges, skills: rows.length };
+  const data = await query<any>('getSkillCatalog');
+  state.badges = { ...state.badges, skills: data.custom.length };
   return html`
     <div class="page">
-      ${header('Skill Finder', 'Repeated prompts with draft SKILL.md you can copy and refine.')}
-      <section class="panel list">
-        ${rows.length === 0
-          ? html`<div class="empty"><h2>No repeats yet</h2><p>As prompts recur, Cadence will suggest skill drafts here.</p></div>`
-          : rows.map(
-              (r) => html`<article>
-                <strong>${r.count}×</strong> ${r.sample}
-                <div class="muted">${r.suggestion}</div>
-                <pre class="codeblock">${r.draftMarkdown}</pre>
+      ${header('Skill Finder', 'Recurring prompts plus an offline community skill catalog with matches.', `${data.custom.length} drafts`)}
+      ${seg(
+        [
+          { id: 'custom', label: `Your repeats (${data.custom.length})` },
+          { id: 'community', label: `Community (${data.totalScanned})` },
+        ],
+        state.skillsTab,
+        (id) => {
+          state.skillsTab = id as typeof state.skillsTab;
+          void refresh();
+        },
+      )}
+      ${state.skillsTab === 'custom'
+        ? html`<section class="panel list">
+            ${data.custom.length === 0
+              ? html`<div class="empty"><h2>No repeats yet</h2><p>As prompts recur, Cadence will suggest skill drafts here.</p></div>`
+              : data.custom.map(
+                  (r: any) => html`<article>
+                    <strong>${r.count}×</strong> ${r.sample}
+                    <div class="muted">${r.suggestion}</div>
+                    ${(r.communityMatches || []).length
+                      ? html`<div class="muted" style="margin-top:4px">Matches: ${r.communityMatches.map((m: any) => m.title).join(' · ')}</div>`
+                      : null}
+                    <pre class="codeblock">${r.draftMarkdown}</pre>
+                  </article>`,
+                )}
+          </section>`
+        : html`<section class="panel list">
+            ${data.community.map(
+              (c: any) => html`<article>
+                <strong>${c.title}</strong>
+                <span class=${c.matched ? 'sev sev-low' : 'sev sev-medium'}>${c.matched ? 'matched' : c.kind}</span>
+                <div class="muted">${c.description}</div>
+                <div class="muted" style="margin-top:4px">${c.category} · ${c.tags.join(', ')}</div>
               </article>`,
             )}
-      </section>
+          </section>`}
     </div>
   `;
 }
 
 async function pageContext() {
-  const data = await query<any>('getContextHealth');
+  const data = await query<any>('getContextDeep');
+  queueCharts([
+    {
+      kind: 'doughnut',
+      id: 'chart-context-score',
+      labels: ['Quality', 'Management'],
+      values: [data.score, data.managementScore],
+    },
+    {
+      kind: 'bar',
+      id: 'chart-context-tree',
+      labels: data.treemap.map((t: any) => t.label),
+      datasets: [{ label: 'Context weight', data: data.treemap.map((t: any) => t.value), color: '#b675d7' }],
+    },
+  ]);
   return html`
     <div class="page">
-      ${header('Context Health', 'Agentic readiness of your prompting and instruction habits.', `Score ${data.score}`)}
-      <section class="panel">
-        <div class="score-list">
-          ${data.checks.map(
-            (c: any) => html`<div class="score-item">
-              <strong>${c.label}</strong>
-              <span class=${c.pass ? 'sev sev-low' : 'sev sev-medium'}>${c.pass ? 'pass' : 'gap'}</span>
-              <div class="muted">Observed ${c.value}</div>
-              <div class="bar"><span style=${`width:${c.pass ? 100 : 35}%`}></span></div>
-            </div>`,
-          )}
-        </div>
-      </section>
+      ${header('Context Health', 'Quality and management checks for agentic prompting.', `Overall ${data.overall}`)}
+      <div class="metric-row">
+        <div class="metric"><div class="label">Quality</div><div class="value mono">${data.score}</div></div>
+        <div class="metric"><div class="label">Management</div><div class="value mono">${data.managementScore}</div></div>
+        <div class="metric"><div class="label">Overall</div><div class="value mono">${data.overall}</div></div>
+      </div>
+      <div class="grid-2">
+        <section class="panel">
+          <h2>Score mix</h2>
+          <div class="chart-box short"><canvas id="chart-context-score"></canvas></div>
+        </section>
+        <section class="panel">
+          <h2>Workspace context weight</h2>
+          <div class="chart-box"><canvas id="chart-context-tree"></canvas></div>
+        </section>
+      </div>
+      <div class="grid-2">
+        <section class="panel">
+          <h2>Quality checks</h2>
+          <div class="check-grid">
+            ${data.qualityChecks.map(
+              (c: any) => html`<div class="score-item">
+                <strong>${c.label}</strong>
+                <span class=${c.pass ? 'sev sev-low' : 'sev sev-medium'}>${c.pass ? 'pass' : 'gap'}</span>
+                <div class="muted">${c.value} turns · ${Math.round(c.pct * 100)}%</div>
+                <div class="bar"><span style=${`width:${Math.round(c.pct * 100)}%`}></span></div>
+              </div>`,
+            )}
+          </div>
+        </section>
+        <section class="panel">
+          <h2>Management checks</h2>
+          <div class="check-grid">
+            ${data.managementChecks.map(
+              (c: any) => html`<div class="score-item">
+                <strong>${c.label}</strong>
+                <span class=${c.pass ? 'sev sev-low' : 'sev sev-medium'}>${c.pass ? 'pass' : 'watch'}</span>
+                <div class="muted">${c.value} turns · ${Math.round(c.pct * 100)}%</div>
+                <div class="bar"><span style=${`width:${Math.min(100, Math.round(c.pct * 100))}%`}></span></div>
+              </div>`,
+            )}
+          </div>
+        </section>
+      </div>
     </div>
   `;
 }
@@ -957,16 +1399,19 @@ async function pageMarks() {
 async function pageLifecycle() {
   const data = await query<any>('getSdlc');
   const entries = Object.entries(data.phases || {}) as [string, number][];
-  const max = Math.max(1, ...entries.map(([, v]) => v));
+  queueCharts([
+    {
+      kind: 'doughnut',
+      id: 'chart-lifecycle',
+      labels: entries.map(([k]) => k),
+      values: entries.map(([, v]) => v),
+    },
+  ]);
   return html`
     <div class="page">
       ${header('Lifecycle', 'How your AI turns distribute across the software lifecycle.')}
       <section class="panel">
-        <div class="spark" style="height:160px">
-          ${entries.map(
-            ([k, v]) => html`<span style=${`height:${Math.max(8, (v / max) * 100)}%;background:var(--chart-4)`} title=${`${k}: ${v}`}></span>`,
-          )}
-        </div>
+        <div class="chart-box"><canvas id="chart-lifecycle"></canvas></div>
         <table style="margin-top:12px">
           <thead><tr><th>Phase</th><th>Requests</th></tr></thead>
           <tbody>
@@ -1016,6 +1461,7 @@ function paint(body?: ReturnType<typeof html>) {
       ? html`<div class="page"><div class="error"><h2>Something went wrong</h2><p>${state.error}</p><button class="btn" onClick=${() => void refresh()}>Retry</button></div></div>`
       : body || html`<div class="loading"><h2>Loading Cadence…</h2></div>`;
   render(shell(content), root);
+  flushCharts();
 }
 
 let started = false;

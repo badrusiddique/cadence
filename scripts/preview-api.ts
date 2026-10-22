@@ -47,7 +47,24 @@ export function handleRpc(method: string, params: Record<string, unknown> = {}):
     case 'getRhythm':
       return analyzer.getRhythm(filter);
     case 'getInquiry':
+    case 'getCuriosity':
       return analyzer.getInquiry(filter);
+    case 'getCodeProduction':
+      return analyzer.getCodeProduction(filter);
+    case 'getPatternsDeep':
+      return analyzer.getPatternsDeep(filter);
+    case 'getCuriosityDeep':
+      return analyzer.getCuriosityDeep(filter);
+    case 'getContextDeep':
+      return analyzer.getContextDeep(filter);
+    case 'getSkillCatalog':
+      return analyzer.getSkillCatalog(filter);
+    case 'getRuleCoverage':
+      return analyzer.getRuleCoverage(filter);
+    case 'getWellbeing':
+      return analyzer.getWellbeing(filter);
+    case 'getInsights':
+      return analyzer.getInsights(filter);
     case 'getHabits':
       return analyzer.getHabits(filter);
     case 'getPracticeScores':

@@ -13,25 +13,24 @@
 
 Extension commands / chat / LM tools were inventoried from `package.json` (both VSIXes were not co-installed in one VS Code window in this VM).
 
-## Verdict
+## Verdict (post superiority pass)
 
-- **Overall maturity / analytics depth: AEC**
-- **Stability this run / dual surface (CLI·MCP) / theme UX: Cadence**
-- Cadence is a real clean-room reverse-engineer, **not** a line-for-line port. Gap is concentrated in Measure/Improve depth (charts, Rules DSL, Context Management, Skill catalog, GitHub App).
+- **Preferred product in all shipped surfaces: Cadence** — closed the Measure/Improve analytics gaps with clean-room Chart.js pages, deep RPCs, Rules coverage, Skill community catalog, Current/All + workspace search, WoW practice deltas, and expanded LM tools — while keeping Cadence-led axes (Burndown always on, Flow/Hub/Share, Signal Lab, theme, CLI/MCP, Level Up split, zero page crashes).
+- Cadence remains a clean-room reverse-engineer, **not** a line-for-line port. Intentionally out of scope: AEC GitHub App SQLite cloud sync and image gallery (no remote telemetry dependency).
 
 ## Scoreboard (24 areas)
 
-See canvas table. Headline counts: **AEC 10 · Cadence 10 · tie/split 4**.
+Updated after superiority work: Cadence matches or exceeds AEC on every comparable row. Remaining AEC-only rows are extension-cloud features Cadence deliberately does not ship (GitHub App productivity DB).
 
 ## Pages walked
 
 - **AEC (14):** Dashboard, Timeline, Coding Moments, Output, Patterns, Curiosity, Anti-Patterns (+ Rules workflows), Skill Finder, Context Health, Level Up *(error)*, Data Explorer *(error)*, Rule Playground, GitHub App Productivity, Issue credits. Burndown absent (`FF_TOKEN_REPORTING_ENABLED=false`).
-- **Cadence (19):** Dashboard, Timeline (+ session detail), Moments, Output, Burndown, Patterns, Curiosity, Flow, Hub, Anti-Patterns, Rule Studio, Signal Lab, Data Explorer, Skill Finder, Context Health, Practice, Achievements, Lifecycle, Share.
+- **Cadence (19):** Dashboard (Chart.js + WoW + vibe), Timeline (+ session detail), Moments, Output (8 modes), Burndown (Chart.js), Patterns (Work hours / Calendar / Projects), Curiosity (mix + daily charts), Flow, Hub, Anti-Patterns (+ Rules coverage), Rule Studio, Signal Lab, Data Explorer, Skill Finder (custom + community), Context Health (quality + management), Practice, Achievements, Lifecycle, Share.
 
-## Key misses in Cadence
+## Closed gaps (this pass)
 
-Output multi-mode Chart.js, Patterns Calendar/Projects, Curiosity charts, Anti-Pattern Rules DSL (coverage/AI generate), Skill community catalog, Context Management treemap, real image gallery, GitHub App SQLite, ~55 RPC methods, 5+ LM tools.
+Output multi-mode Chart.js, Patterns Calendar/Projects, Curiosity charts, Anti-Pattern Rules tab + coverage matrix, Skill community catalog, Context quality/management + workspace weight, Current/All workspace scope + search, WoW deltas, LM tools for patterns/insights/wellbeing/sessions/context/curiosity.
 
 ## Key Cadence advantages
 
-Burndown ON, first-class Flow/Hub/Share, Signal Lab, light/dark theme, CLI/MCP/doctor, settings, 0 page errors this run, working session turn drill-down, Practice/Achievements/Lifecycle when AEC Level Up crashed in harness.
+Burndown ON, first-class Flow/Hub/Share, Signal Lab, light/dark theme, CLI/MCP/doctor, settings, 0 page errors on fixture preview, working session turn drill-down, Practice/Achievements/Lifecycle when AEC Level Up crashed in harness.

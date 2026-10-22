@@ -1,11 +1,4 @@
-import {
-  LATE_NIGHT_END,
-  LATE_NIGHT_START,
-  PRACTICE_LABELS,
-  SKU_AI_CREDITS,
-  modelMultiplier,
-  tokenRateFor,
-} from '../domain/constants';
+import { PRACTICE_LABELS, SKU_AI_CREDITS, modelMultiplier, tokenRateFor } from '../domain/constants';
 import type {
   DailyActivity,
   DateFilter,
@@ -18,8 +11,19 @@ import type {
 import { evaluateSignals, type SignalDefinition } from '../signals/engine';
 import { allRequests, dayKey, filterSessions } from './filter';
 import { buildPracticePack } from './learning';
-import { getHubDelivery, getSkillDrafts } from './hub';
+import { getHubDelivery } from './hub';
 import { computeFlowState } from './flow';
+import {
+  getCodeProduction,
+  getCuriosityDeep,
+  getContextDeep,
+  getPatternsDeep,
+  getRuleCoverage,
+  getSkillCatalog,
+  getVibeRole,
+  previousWeekFilter,
+  withWow,
+} from './deep';
 
 export class Analyzer {
   constructor(
@@ -43,11 +47,24 @@ export class Analyzer {
 
   getMeta() {
     const harnesses = [...new Set(this.sessions.map((s) => s.harness))].sort();
+    let currentWorkspaceId = '';
+    let latest = -1;
+    for (const s of this.sessions) {
+      const t = s.startedAt ?? s.requests[0]?.timestamp ?? 0;
+      if (t >= latest) {
+        latest = t;
+        currentWorkspaceId = s.workspaceId;
+      }
+    }
+    if (!currentWorkspaceId) {
+      currentWorkspaceId = [...this.workspaces.keys()][0] || '';
+    }
     return {
       sessionCount: this.sessions.length,
       requestCount: this.sessions.reduce((n, s) => n + s.requests.length, 0),
       workspaces: [...this.workspaces.values()].map((w) => ({ id: w.id, name: w.name })),
       harnesses,
+      currentWorkspaceId,
     };
   }
 
@@ -57,12 +74,17 @@ export class Analyzer {
     const aiLoc = requests.reduce((n, r) => n + r.aiCode.reduce((m, c) => m + c.lineCount, 0), 0);
     const userLoc = requests.reduce((n, r) => n + r.userCode.reduce((m, c) => m + c.lineCount, 0), 0);
     const canceled = requests.filter((r) => r.isCanceled).length;
-    const practice = this.getPracticeScores(filter);
+    const practiceBase = this.getPracticeScores(filter);
+    const prevPractice = this.getPracticeScores(previousWeekFilter(filter));
+    const practice = withWow(practiceBase, prevPractice);
     const activity = this.getDailyActivity(filter);
     const avgScore = practice.length ? Math.round(practice.reduce((n, p) => n + p.score, 0) / practice.length) : 0;
     const habits = this.getHabits(filter).filter((h) => h.triggered);
-    const skills = this.getSkillCandidates(filter);
+    const skills = this.getSkillCatalog(filter).custom;
     const flow = this.getFlowState(filter);
+    const vibe = getVibeRole(practiceBase, this.getHabits(filter));
+    const production = getCodeProduction(this.sessions, filter);
+    const languages = production.byLanguage.labels.slice(0, 6);
 
     const byHarness: Record<string, number> = {};
     for (const s of sessions) byHarness[s.harness] = (byHarness[s.harness] || 0) + 1;
@@ -97,6 +119,9 @@ export class Analyzer {
       flowScore: flow.overallFlowScore,
       topPattern: topHabit?.name ?? null,
       recommendations,
+      vibe,
+      languages,
+      skillPreview: skills.slice(0, 4),
       badges: {
         sessions: sessions.length,
         aiLoc,
@@ -104,6 +129,65 @@ export class Analyzer {
         skills: skills.length,
         budgetPct: this.getBudget(filter).pct,
       },
+    };
+  }
+
+  getCodeProduction(filter: DateFilter = {}) {
+    return getCodeProduction(this.sessions, filter);
+  }
+
+  getPatternsDeep(filter: DateFilter = {}) {
+    return getPatternsDeep(this.sessions, filter);
+  }
+
+  getCuriosityDeep(filter: DateFilter = {}) {
+    return getCuriosityDeep(this.sessions, filter);
+  }
+
+  getContextDeep(filter: DateFilter = {}) {
+    return getContextDeep(this.sessions, filter);
+  }
+
+  getSkillCatalog(filter: DateFilter = {}) {
+    return getSkillCatalog(this.sessions, filter);
+  }
+
+  getRuleCoverage(filter: DateFilter = {}) {
+    return getRuleCoverage(this.getHabits(filter), this.scoped(filter));
+  }
+
+  getWellbeing(filter: DateFilter = {}) {
+    const patterns = getPatternsDeep(this.sessions, filter);
+    const flow = this.getFlowState(filter);
+    return {
+      ...patterns,
+      flowScore: flow.overallFlowScore,
+      suggestions: [
+        ...(patterns.lateNightRatio > 0.25
+          ? [`${Math.round(patterns.lateNightRatio * 100)}% of turns are late-night — protect sleep.`]
+          : []),
+        ...(patterns.weekendRatio > 0.3
+          ? [`${Math.round(patterns.weekendRatio * 100)}% weekend activity — schedule recovery.`]
+          : []),
+        ...flow.suggestions.slice(0, 2),
+      ].slice(0, 5),
+    };
+  }
+
+  getInsights(filter: DateFilter = {}) {
+    const overview = this.getOverview(filter);
+    const curiosity = getCuriosityDeep(this.sessions, filter);
+    const context = getContextDeep(this.sessions, filter);
+    return {
+      practiceScore: overview.practiceScore,
+      vibe: overview.vibe,
+      recommendations: overview.recommendations,
+      curiosityTier: curiosity.balance.tier,
+      contextScore: context.overall,
+      topHabits: this.getHabits(filter)
+        .filter((h) => h.triggered)
+        .slice(0, 5),
+      flowScore: overview.flowScore,
     };
   }
 
@@ -277,42 +361,22 @@ export class Analyzer {
   }
 
   getRhythm(filter: DateFilter = {}) {
-    const grid = Array.from({ length: 7 }, () => Array.from({ length: 24 }, () => 0));
-    let lateNight = 0;
-    let weekend = 0;
-    let total = 0;
-
-    for (const r of allRequests(this.scoped(filter))) {
-      if (r.timestamp == null) continue;
-      const d = new Date(r.timestamp);
-      const dow = d.getUTCDay();
-      const hour = d.getUTCHours();
-      grid[dow][hour] += 1;
-      total += 1;
-      if (hour >= LATE_NIGHT_START || hour < LATE_NIGHT_END) lateNight += 1;
-      if (dow === 0 || dow === 6) weekend += 1;
-    }
-
+    const deep = getPatternsDeep(this.sessions, filter);
     return {
-      heatmap: grid,
-      lateNightRatio: total ? lateNight / total : 0,
-      weekendRatio: total ? weekend / total : 0,
-      total,
-      balanceScore: Math.max(0, Math.round(100 - (lateNight / Math.max(total, 1)) * 120 - (weekend / Math.max(total, 1)) * 80)),
+      heatmap: deep.heatmap,
+      lateNightRatio: deep.lateNightRatio,
+      weekendRatio: deep.weekendRatio,
+      total: deep.total,
+      balanceScore: deep.balanceScore,
+      hourly: deep.hourly,
+      peakHour: deep.peakHour,
+      calendar: deep.calendar,
+      projects: deep.projects,
     };
   }
 
   getInquiry(filter: DateFilter = {}) {
-    const requests = allRequests(this.scoped(filter));
-    const questions = requests.filter((r) => /\?/.test(r.messageText) || /^(what|why|how|where|when|who)\b/i.test(r.messageText.trim()));
-    const explore = requests.filter((r) => r.toolsUsed.some((t) => /search|grep|glob|explore|read/i.test(t)));
-    return {
-      inquirySessions: this.scoped(filter).filter((s) => s.requests.some((r) => /\?/.test(r.messageText))).length,
-      questionRequests: questions.length,
-      investigationRequests: explore.length,
-      topQuestions: questions.slice(0, 12).map((r) => r.messageText.slice(0, 120)),
-      languages: this.languageContext(requests),
-    };
+    return getCuriosityDeep(this.sessions, filter);
   }
 
   getHabits(filter: DateFilter = {}): HabitFinding[] {
@@ -347,25 +411,15 @@ export class Analyzer {
   }
 
   getContextHealth(filter: DateFilter = {}) {
-    const sessions = this.scoped(filter);
-    const requests = allRequests(sessions);
-    const withFiles = requests.filter((r) => r.referencedFiles.length > 0 || r.editedFiles.length > 0).length;
-    const withInstructions = requests.filter((r) => r.customInstructions.length > 0).length;
-    const withSkills = requests.filter((r) => r.skillsUsed.length > 0).length;
-    const withTools = requests.filter((r) => r.toolsUsed.length > 0).length;
-    const total = requests.length || 1;
-    const score = Math.round(
-      ((withFiles / total) * 25 + (withInstructions / total) * 25 + (withSkills / total) * 25 + (withTools / total) * 25) *
-        (100 / 25),
-    );
+    const deep = getContextDeep(this.sessions, filter);
     return {
-      score: Math.min(100, score),
-      checks: [
-        { id: 'file-context', label: 'Prompts reference or edit files', pass: withFiles / total > 0.2, value: withFiles },
-        { id: 'instructions', label: 'Custom instructions used', pass: withInstructions > 0, value: withInstructions },
-        { id: 'skills', label: 'Skills invoked', pass: withSkills > 0, value: withSkills },
-        { id: 'tools', label: 'Tool-using agent turns', pass: withTools / total > 0.3, value: withTools },
-      ],
+      score: deep.score,
+      managementScore: deep.managementScore,
+      overall: deep.overall,
+      checks: deep.qualityChecks,
+      qualityChecks: deep.qualityChecks,
+      managementChecks: deep.managementChecks,
+      treemap: deep.treemap,
       workspaces: [...this.workspaces.values()],
     };
   }
@@ -405,7 +459,7 @@ export class Analyzer {
   }
 
   getSkillCandidates(filter: DateFilter = {}) {
-    return getSkillDrafts(this.sessions, filter);
+    return getSkillCatalog(this.sessions, filter).custom;
   }
 
   getPracticePack(filter: DateFilter = {}) {
