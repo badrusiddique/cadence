@@ -10,6 +10,8 @@ vitest.config.mts
 esbuild.mjs
 **/*.test.ts
 **/*.map
+dist/**/*.map
+dist/preview-api.cjs
 coverage/**
 fixtures/**
 scripts/**
