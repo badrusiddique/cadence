@@ -2,6 +2,7 @@
 .vscode-test/**
 src/**
 docs/superpowers/**
+docs/references/**
 node_modules/**
 .gitignore
 eslint.config.mjs
