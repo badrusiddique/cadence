@@ -13,3 +13,7 @@
 - CLI (`cadence doctor|overview|habits|export|mcp`) and stdio MCP server.
 - Evidence provenance tags (observed / derived / inferred) and agent skill.
 - Reverse-engineering notes from REA analysis of AI Engineer Coach.
+- Rule Studio (live-test + save), Signal Lab predicates, local signal trust gate.
+- Practice quizzes, Skill Match drafts, Hub issue/PR relative spend.
+- Ingest session cache under `~/.cadence/cache`.
+- Goal checklist in `docs/GOAL.md`.
