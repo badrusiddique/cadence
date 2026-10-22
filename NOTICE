@@ -1,0 +1,23 @@
+NOTICES
+
+Cadence is an original open-source project by Badru Siddique.
+
+Problem-space prior art
+-----------------------
+The general idea of a local-first VS Code dashboard that analyzes AI coding
+assistant session logs was explored publicly by Microsoft’s “AI Engineer Coach”
+project (MIT License): https://github.com/microsoft/ai-engineering-coach
+
+Cadence is not a fork of that repository. Names, UI, architecture, packaging,
+documentation, and source code in this repository are original. Cadence reads
+the same kinds of on-disk session log formats that many AI coding tools already
+write (JSONL / SQLite / chat session files). Those log formats are owned by
+their respective tool vendors.
+
+Third-party licenses
+--------------------
+
+chart.js — MIT — https://github.com/chartjs/Chart.js
+htm — MIT — https://github.com/developit/htm
+preact — MIT — https://github.com/preactjs/preact
+zod — MIT — https://github.com/colinhacks/zod

@@ -1,0 +1,290 @@
+{
+  "name": "cadence-insights",
+  "displayName": "Cadence — Agent Engineering Insights",
+  "description": "Local-first insights for AI coding assistants. Watch sessions, quantify output, refine habits, grow practice — no telemetry, no log mutation.",
+  "version": "0.1.0",
+  "publisher": "badrusiddique",
+  "author": {
+    "name": "Badru Siddique"
+  },
+  "license": "MIT",
+  "icon": "assets/icon.png",
+  "galleryBanner": {
+    "color": "#E8EEF4",
+    "theme": "light"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/badrusiddique/cadence.git"
+  },
+  "bugs": {
+    "url": "https://github.com/badrusiddique/cadence/issues"
+  },
+  "homepage": "https://github.com/badrusiddique/cadence#readme",
+  "engines": {
+    "vscode": "^1.125.0",
+    "node": ">=20"
+  },
+  "categories": [
+    "Other",
+    "Visualization",
+    "Machine Learning"
+  ],
+  "keywords": [
+    "ai",
+    "copilot",
+    "claude",
+    "codex",
+    "opencode",
+    "cursor",
+    "analytics",
+    "productivity",
+    "agentic",
+    "cadence"
+  ],
+  "activationEvents": [
+    "onCommand:cadence.open",
+    "onCommand:cadence.reload",
+    "onCommand:cadence.exportSummary",
+    "onCommand:cadence.reviewSignals",
+    "onView:cadence.overview"
+  ],
+  "main": "./dist/extension.js",
+  "capabilities": {
+    "untrustedWorkspaces": {
+      "supported": "limited",
+      "description": "In untrusted workspaces, project-level Cadence signals under .cadence/ are not loaded. Built-in and personal signals still work."
+    }
+  },
+  "contributes": {
+    "commands": [
+      {
+        "command": "cadence.open",
+        "title": "Cadence: Open Overview",
+        "icon": "$(pulse)"
+      },
+      {
+        "command": "cadence.reload",
+        "title": "Cadence: Reload Sessions",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "cadence.exportSummary",
+        "title": "Cadence: Export Snapshot",
+        "icon": "$(export)"
+      },
+      {
+        "command": "cadence.reviewSignals",
+        "title": "Cadence: Review Local Signals",
+        "icon": "$(shield)"
+      },
+      {
+        "command": "cadence.showOutput",
+        "title": "Cadence: Show Output Channel"
+      }
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "cadence",
+          "title": "Cadence",
+          "icon": "assets/activity-bar.svg"
+        }
+      ]
+    },
+    "views": {
+      "cadence": [
+        {
+          "id": "cadence.overview",
+          "name": "Overview",
+          "type": "webview"
+        }
+      ]
+    },
+    "chatParticipants": [
+      {
+        "id": "cadence.coach",
+        "fullName": "Cadence",
+        "name": "cadence",
+        "description": "Ask about your AI coding cadence — usage summary, habits, flow, and tool comparison.",
+        "isSticky": true,
+        "commands": [
+          {
+            "name": "summary",
+            "description": "Summarize recent AI coding activity"
+          },
+          {
+            "name": "habits",
+            "description": "Surface habit findings and how to improve"
+          },
+          {
+            "name": "compare",
+            "description": "Compare harnesses side by side"
+          },
+          {
+            "name": "flow",
+            "description": "Review flow and focus signals"
+          }
+        ]
+      }
+    ],
+    "languageModelTools": [
+      {
+        "name": "cadence_summary",
+        "tags": ["cadence"],
+        "displayName": "Cadence: Usage Summary",
+        "modelDescription": "High-level summary of AI coding assistant usage: sessions, recommendations, top habits.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "fromDate": { "type": "string", "description": "ISO date YYYY-MM-DD" },
+            "toDate": { "type": "string", "description": "ISO date YYYY-MM-DD" },
+            "workspaceId": { "type": "string" },
+            "harness": { "type": "string" }
+          }
+        }
+      },
+      {
+        "name": "cadence_activity",
+        "tags": ["cadence"],
+        "displayName": "Cadence: Daily Activity",
+        "modelDescription": "Daily activity: requests, LOC, sessions, harness breakdown.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "fromDate": { "type": "string" },
+            "toDate": { "type": "string" },
+            "workspaceId": { "type": "string" },
+            "harness": { "type": "string" }
+          }
+        }
+      },
+      {
+        "name": "cadence_budget",
+        "tags": ["cadence"],
+        "displayName": "Cadence: Budget Estimates",
+        "modelDescription": "Local AI credit/token estimates with model breakdown. Not billing data.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "fromDate": { "type": "string" },
+            "toDate": { "type": "string" },
+            "workspaceId": { "type": "string" },
+            "harness": { "type": "string" }
+          }
+        }
+      },
+      {
+        "name": "cadence_throughput",
+        "tags": ["cadence"],
+        "displayName": "Cadence: Throughput",
+        "modelDescription": "AI vs user LOC, language and workspace distribution.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "fromDate": { "type": "string" },
+            "toDate": { "type": "string" },
+            "workspaceId": { "type": "string" },
+            "harness": { "type": "string" }
+          }
+        }
+      },
+      {
+        "name": "cadence_flow",
+        "tags": ["cadence"],
+        "displayName": "Cadence: Flow",
+        "modelDescription": "Flow scores, best hours, follow-up latency, continuity.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "fromDate": { "type": "string" },
+            "toDate": { "type": "string" },
+            "workspaceId": { "type": "string" },
+            "harness": { "type": "string" }
+          }
+        }
+      },
+      {
+        "name": "cadence_habits",
+        "tags": ["cadence"],
+        "displayName": "Cadence: Habits",
+        "modelDescription": "Detected habit findings with severity and recommendations.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "fromDate": { "type": "string" },
+            "toDate": { "type": "string" },
+            "workspaceId": { "type": "string" },
+            "harness": { "type": "string" }
+          }
+        }
+      },
+      {
+        "name": "cadence_compare",
+        "tags": ["cadence"],
+        "displayName": "Cadence: Harness Compare",
+        "modelDescription": "Side-by-side harness comparison: sessions, requests, LOC, cancel rates.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "fromDate": { "type": "string" },
+            "toDate": { "type": "string" },
+            "workspaceId": { "type": "string" }
+          }
+        }
+      }
+    ],
+    "configuration": {
+      "title": "Cadence",
+      "properties": {
+        "cadence.demoMode": {
+          "type": "boolean",
+          "default": false,
+          "description": "Load synthetic fixtures instead of local session logs (useful for demos and screenshots)."
+        },
+        "cadence.budgetSku": {
+          "type": "string",
+          "enum": ["pro", "pro-plus", "business", "enterprise", "custom"],
+          "default": "pro",
+          "description": "Assumed AI credit SKU for Budget estimates. Estimates only — not billing."
+        },
+        "cadence.customBudgetCredits": {
+          "type": "number",
+          "default": 1000,
+          "description": "Custom monthly credit budget when budgetSku is custom."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run build",
+    "build": "node esbuild.mjs",
+    "watch": "node esbuild.mjs --watch",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src --max-warnings 0",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "check": "npm run typecheck && npm run lint && npm run test",
+    "package": "npm run build && vsce package --no-dependencies",
+    "preview": "node scripts/preview-server.mjs",
+    "gen:signals": "node scripts/gen-signals.mjs",
+    "gen:fixtures": "node scripts/gen-fixtures.mjs"
+  },
+  "dependencies": {
+    "chart.js": "^4.4.8",
+    "htm": "^3.1.1",
+    "preact": "^10.26.4",
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.10",
+    "@types/vscode": "^1.125.0",
+    "@vscode/vsce": "^3.3.2",
+    "esbuild": "^0.25.1",
+    "eslint": "^9.22.0",
+    "jsdom": "^26.0.0",
+    "typescript": "^5.8.2",
+    "typescript-eslint": "^8.26.1",
+    "vitest": "^3.0.9"
+  }
+}
