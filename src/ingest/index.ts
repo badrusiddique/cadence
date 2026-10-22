@@ -7,6 +7,7 @@ import { parseCursorSessions } from './harnesses/cursor';
 import { parseOpenCodeSessions } from './harnesses/opencode';
 import { parseVsCodeSessions } from './harnesses/vscode';
 import { buildFixtureSessions } from './fixtures';
+import { readIngestCache, writeIngestCache } from './cache';
 
 export type ProgressFn = (update: { phase: string; detail?: string; ratio?: number }) => void;
 
@@ -28,6 +29,7 @@ export function ingestAll(options?: {
   demoMode?: boolean;
   sources?: DiscoveredSources;
   onProgress?: ProgressFn;
+  useCache?: boolean;
 }): IngestResult {
   if (options?.demoMode) {
     options.onProgress?.({ phase: 'fixtures', detail: 'Loading demo fixtures', ratio: 1 });
@@ -39,6 +41,14 @@ export function ingestAll(options?: {
       sources: ['fixtures'],
       errors: [],
     };
+  }
+
+  if (options?.useCache !== false) {
+    const cached = readIngestCache();
+    if (cached && cached.sessions.length > 0) {
+      options?.onProgress?.({ phase: 'cache', detail: 'Loaded cached sessions', ratio: 1 });
+      return cached;
+    }
   }
 
   const sources = options?.sources ?? discoverSources();
@@ -122,13 +132,15 @@ export function ingestAll(options?: {
     };
   }
 
-  return {
+  const result: IngestResult = {
     sessions,
     workspaces: indexWorkspaces(sessions),
     editLocIndex,
     sources: [...new Set(sourcePaths)],
     errors,
   };
+  writeIngestCache(result);
+  return result;
 }
 
 export { discoverSources, hasAnySources } from './discover';

@@ -17,6 +17,8 @@ import type {
 } from '../domain/types';
 import { evaluateSignals, type SignalDefinition } from '../signals/engine';
 import { allRequests, dayKey, filterSessions } from './filter';
+import { buildPracticePack } from './learning';
+import { getHubDelivery, getSkillDrafts } from './hub';
 
 export class Analyzer {
   constructor(
@@ -312,21 +314,40 @@ export class Analyzer {
   }
 
   getSkillCandidates(filter: DateFilter = {}) {
-    const map = new Map<string, number>();
-    for (const r of allRequests(this.scoped(filter))) {
-      const key = r.messageText.trim().toLowerCase().replace(/\s+/g, ' ').slice(0, 80);
-      if (key.length < 12) continue;
-      map.set(key, (map.get(key) || 0) + 1);
-    }
-    return [...map.entries()]
-      .filter(([, n]) => n >= 2)
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 20)
-      .map(([prompt, count]) => ({
-        prompt,
-        count,
-        suggestion: `Consider a skill for: “${prompt.slice(0, 60)}…”`,
-      }));
+    return getSkillDrafts(this.sessions, filter);
+  }
+
+  getPracticePack(filter: DateFilter = {}) {
+    return buildPracticePack(this.getPracticeScores(filter), this.getHabits(filter));
+  }
+
+  getHub(filter: DateFilter = {}) {
+    return getHubDelivery(this.sessions, filter);
+  }
+
+  testSignal(signal: SignalDefinition, filter: DateFilter = {}) {
+    const findings = evaluateSignals([signal], this.scoped(filter));
+    return findings[0] ?? null;
+  }
+
+  evaluateLabPredicate(expression: string, filter: DateFilter = {}) {
+    const rows = this.getFieldBrowser(filter).sample as Array<Record<string, unknown>>;
+    const fn = buildSafePredicate(expression);
+    const matched = rows.filter((row) => {
+      try {
+        return fn(row);
+      } catch {
+        return false;
+      }
+    });
+    return {
+      expression,
+      total: rows.length,
+      matched: matched.length,
+      ratio: rows.length ? matched.length / rows.length : 0,
+      samples: matched.slice(0, 8),
+      evidence: { state: 'derived' as const, confidence: 'medium' as const, authority: 'signal-engine' as const },
+    };
   }
 
   getShareCard(filter: DateFilter = {}) {
@@ -369,16 +390,19 @@ export class Analyzer {
       harness: r.session.harness,
       modelId: r.modelId,
       messageLength: r.messageLength,
+      toolCount: r.toolsUsed.length,
       tools: r.toolsUsed.length,
       aiLoc: r.aiCode.reduce((n, c) => n + c.lineCount, 0),
+      isCanceled: r.isCanceled,
       canceled: r.isCanceled,
       workType: r.workType,
+      promptTokens: r.promptTokens ?? 0,
     }));
     return {
       fields: [
         'messageLength',
         'modelId',
-        'toolsUsed',
+        'toolCount',
         'aiLoc',
         'promptTokens',
         'isCanceled',
@@ -471,3 +495,28 @@ export class Analyzer {
     ];
   }
 }
+
+/** Tiny sandbox for Signal Lab — identifiers become row lookups; no free JS. */
+function buildSafePredicate(expression: string): (row: Record<string, unknown>) => boolean {
+  const expr = expression.trim();
+  if (!expr) return () => false;
+  if (/[^a-zA-Z0-9_\s.<>=!&|()'"]/.test(expr)) {
+    throw new Error('Expression contains unsupported characters.');
+  }
+  return (row) => {
+    const replaced = expr
+      .replace(/\bAND\b/gi, '&&')
+      .replace(/\bOR\b/gi, '||')
+      .replace(/\b([a-zA-Z_][a-zA-Z0-9_]*)\b/g, (id) => {
+        if (['true', 'false', 'null'].includes(id)) return id;
+        if (/^\d/.test(id)) return id;
+        const v = row[id];
+        if (typeof v === 'string') return JSON.stringify(v);
+        if (typeof v === 'number' || typeof v === 'boolean') return String(v);
+        if (v == null) return 'null';
+        return JSON.stringify(v);
+      });
+    return Boolean(Function(`"use strict"; return (${replaced});`)());
+  };
+}
+

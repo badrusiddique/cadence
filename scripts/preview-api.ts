@@ -1,6 +1,9 @@
 import { Analyzer } from '../src/analyze/analyzer';
 import { buildFixtureSessions } from '../src/ingest/fixtures';
 import { BUILTIN_SIGNALS } from '../src/signals/catalog';
+import { builtinSignalTemplate, listSignalCatalog } from '../src/signals/loader';
+import { parseSignalMarkdown } from '../src/signals/engine';
+import { getPending } from '../src/signals/trust';
 import type { Workspace } from '../src/domain/types';
 
 const sessions = buildFixtureSessions();
@@ -41,6 +44,8 @@ export function handleRpc(method: string, params: Record<string, unknown> = {}):
       return analyzer.getHabits(filter);
     case 'getPracticeScores':
       return analyzer.getPracticeScores(filter);
+    case 'getPracticePack':
+      return analyzer.getPracticePack(filter);
     case 'getFieldBrowser':
       return analyzer.getFieldBrowser(filter);
     case 'getSkillCandidates':
@@ -51,10 +56,32 @@ export function handleRpc(method: string, params: Record<string, unknown> = {}):
       return analyzer.getAchievements(filter);
     case 'getSdlc':
       return analyzer.getSdlc(filter);
+    case 'getHub':
+      return analyzer.getHub(filter);
     case 'exportSummary':
       return analyzer.exportSummary(filter);
     case 'copyMarkdown':
-      return { copied: true };
+      return { copied: true, markdown: analyzer.exportSummary(filter).markdown };
+    case 'listSignals':
+      return listSignalCatalog({});
+    case 'getSignalTemplate':
+      return {
+        markdown: builtinSignalTemplate({
+          id: typeof params.id === 'string' ? params.id : undefined,
+          name: typeof params.name === 'string' ? params.name : undefined,
+        }),
+      };
+    case 'savePersonalSignal':
+      return { filePath: '~/.cadence/signals/preview-skip.signal.md', id: 'preview-skip', preview: true };
+    case 'testSignalMarkdown': {
+      const parsed = parseSignalMarkdown(String(params.markdown || ''));
+      if (!parsed) throw new Error('Could not parse SignalSpec markdown.');
+      return { finding: analyzer.testSignal(parsed, filter) };
+    }
+    case 'evaluateLab':
+      return analyzer.evaluateLabPredicate(String(params.expression || ''), filter);
+    case 'getPendingSignals':
+      return getPending();
     default:
       throw new Error(`Unknown method: ${method}`);
   }

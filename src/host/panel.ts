@@ -1,15 +1,26 @@
 import * as vscode from 'vscode';
 import { Analyzer } from '../analyze/analyzer';
 import type { RpcRequest } from '../ui/rpc';
+import { handleRpc, type HostContext } from './rpc-handlers';
+import type { TrustStore } from '../signals/trust';
 
 export class CadencePanel {
   public static current: CadencePanel | undefined;
   private readonly panel: vscode.WebviewPanel;
   private analyzer: Analyzer;
+  private trustStore: TrustStore | null = null;
+  private workspaceRoot: string | undefined;
 
-  private constructor(panel: vscode.WebviewPanel, private readonly extensionUri: vscode.Uri, analyzer: Analyzer) {
+  private constructor(
+    panel: vscode.WebviewPanel,
+    private readonly extensionUri: vscode.Uri,
+    analyzer: Analyzer,
+    opts?: { trustStore?: TrustStore | null; workspaceRoot?: string },
+  ) {
     this.panel = panel;
     this.analyzer = analyzer;
+    this.trustStore = opts?.trustStore ?? null;
+    this.workspaceRoot = opts?.workspaceRoot;
     this.panel.webview.options = {
       enableScripts: true,
       localResourceRoots: [vscode.Uri.joinPath(extensionUri, 'dist'), vscode.Uri.joinPath(extensionUri, 'assets')],
@@ -20,7 +31,15 @@ export class CadencePanel {
     });
     this.panel.webview.onDidReceiveMessage(async (msg: RpcRequest) => {
       try {
-        const result = await this.dispatch(msg.method, msg.params || {});
+        const ctx: HostContext = {
+          analyzer: this.analyzer,
+          trustStore: this.trustStore,
+          workspaceRoot: this.workspaceRoot,
+        };
+        const result = await handleRpc(ctx, msg.method, msg.params || {});
+        if (msg.method === 'copyMarkdown' && result && typeof result === 'object' && 'markdown' in (result as any)) {
+          await vscode.env.clipboard.writeText(String((result as any).markdown || ''));
+        }
         await this.panel.webview.postMessage({ id: msg.id, ok: true, result });
       } catch (err) {
         await this.panel.webview.postMessage({
@@ -32,71 +51,24 @@ export class CadencePanel {
     });
   }
 
-  static show(extensionUri: vscode.Uri, analyzer: Analyzer): CadencePanel {
+  static show(
+    extensionUri: vscode.Uri,
+    analyzer: Analyzer,
+    opts?: { trustStore?: TrustStore | null; workspaceRoot?: string },
+  ): CadencePanel {
     if (CadencePanel.current) {
       CadencePanel.current.panel.reveal(vscode.ViewColumn.One);
-      // Rebuild panel with fresh analyzer by disposing and recreating would lose scroll;
-      // instead swap via mutable reference on the instance.
       CadencePanel.current.analyzer = analyzer;
+      if (opts?.trustStore !== undefined) CadencePanel.current.trustStore = opts.trustStore;
+      if (opts?.workspaceRoot !== undefined) CadencePanel.current.workspaceRoot = opts.workspaceRoot;
       return CadencePanel.current;
     }
     const panel = vscode.window.createWebviewPanel('cadence.overview', 'Cadence', vscode.ViewColumn.One, {
       enableScripts: true,
       retainContextWhenHidden: true,
     });
-    CadencePanel.current = new CadencePanel(panel, extensionUri, analyzer);
+    CadencePanel.current = new CadencePanel(panel, extensionUri, analyzer, opts);
     return CadencePanel.current;
-  }
-
-  private async dispatch(method: string, params: Record<string, unknown>): Promise<unknown> {
-    const filter = {
-      workspaceId: typeof params.workspaceId === 'string' ? params.workspaceId : undefined,
-      harness: typeof params.harness === 'string' ? params.harness : undefined,
-      fromDate: typeof params.fromDate === 'string' ? params.fromDate : undefined,
-      toDate: typeof params.toDate === 'string' ? params.toDate : undefined,
-    };
-
-    switch (method) {
-      case 'getMeta':
-        return this.analyzer.getMeta();
-      case 'getOverview':
-        return this.analyzer.getOverview(filter);
-      case 'getTimeline':
-        return this.analyzer.getTimeline(filter);
-      case 'getMoments':
-        return this.analyzer.getMoments(filter);
-      case 'getThroughput':
-        return this.analyzer.getThroughput(filter);
-      case 'getBudget':
-        return this.analyzer.getBudget(filter);
-      case 'getRhythm':
-        return this.analyzer.getRhythm(filter);
-      case 'getInquiry':
-        return this.analyzer.getInquiry(filter);
-      case 'getHabits':
-        return this.analyzer.getHabits(filter);
-      case 'getPracticeScores':
-        return this.analyzer.getPracticeScores(filter);
-      case 'getFieldBrowser':
-        return this.analyzer.getFieldBrowser(filter);
-      case 'getSkillCandidates':
-        return this.analyzer.getSkillCandidates(filter);
-      case 'getContextHealth':
-        return this.analyzer.getContextHealth(filter);
-      case 'getAchievements':
-        return this.analyzer.getAchievements(filter);
-      case 'getSdlc':
-        return this.analyzer.getSdlc(filter);
-      case 'exportSummary':
-        return this.analyzer.exportSummary(filter);
-      case 'copyMarkdown': {
-        const summary = this.analyzer.exportSummary(filter);
-        await vscode.env.clipboard.writeText(summary.markdown);
-        return { copied: true };
-      }
-      default:
-        throw new Error(`Unknown method: ${method}`);
-    }
   }
 
   private html(): string {

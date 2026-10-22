@@ -376,6 +376,35 @@ th {
   border: 1px solid rgba(13, 143, 111, 0.35);
 }
 
+.editor, .editor-input {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.85);
+  color: var(--ink);
+  font-family: ui-monospace, 'IBM Plex Mono', Menlo, monospace;
+  font-size: 0.82rem;
+  padding: 0.75rem;
+  resize: vertical;
+}
+
+.editor-input {
+  font-family: var(--font-ui);
+  font-size: 0.95rem;
+}
+
+.codeblock {
+  margin-top: 0.65rem;
+  padding: 0.75rem;
+  border-radius: 10px;
+  background: rgba(20, 32, 51, 0.05);
+  border: 1px solid var(--line);
+  white-space: pre-wrap;
+  font-size: 0.78rem;
+  overflow: auto;
+  max-height: 240px;
+}
+
 .list {
   display: grid;
   gap: 0.65rem;

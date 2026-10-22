@@ -9,6 +9,7 @@ type PageId =
   | 'budget'
   | 'rhythm'
   | 'inquiry'
+  | 'hub'
   | 'habits'
   | 'studio'
   | 'lab'
@@ -39,6 +40,7 @@ const NAV: NavGroup[] = [
       { id: 'budget', label: 'Budget', icon: '◌' },
       { id: 'rhythm', label: 'Rhythm', icon: '▦' },
       { id: 'inquiry', label: 'Inquiry', icon: '?' },
+      { id: 'hub', label: 'Hub', icon: '⌘' },
     ],
   },
   {
@@ -192,9 +194,10 @@ async function renderPage() {
   else if (state.page === 'budget') body = await pageBudget();
   else if (state.page === 'rhythm') body = await pageRhythm();
   else if (state.page === 'inquiry') body = await pageInquiry();
+  else if (state.page === 'hub') body = await pageHub();
   else if (state.page === 'habits') body = await pageHabits();
-  else if (state.page === 'studio') body = pageStudio();
-  else if (state.page === 'lab') body = pageLab();
+  else if (state.page === 'studio') body = await pageStudio();
+  else if (state.page === 'lab') body = await pageLab();
   else if (state.page === 'fields') body = await pageFields();
   else if (state.page === 'skills') body = await pageSkills();
   else if (state.page === 'context') body = await pageContext();
@@ -445,26 +448,148 @@ async function pageHabits() {
   `;
 }
 
-function pageStudio() {
-  return html`
+async function pageStudio() {
+  const catalog = await query<any[]>('listSignals');
+  const template = await rpc<{ markdown: string }>('getSignalTemplate', { id: 'my-signal', name: 'My Signal' });
+  let draft = template.markdown;
+  let status = '';
+  let finding: any = null;
+
+  const view = () => html`
     <div class="page">
-      ${header('Rule Studio', 'Author personal and project SignalSpec files under ~/.cadence or .cadence/.')}
+      ${header('Rule Studio', 'Author, live-test, and save personal SignalSpec files.', `${catalog.length} signals`)}
+      <div class="grid-2">
+        <section class="panel">
+          <h2>Catalog</h2>
+          <table>
+            <thead><tr><th>Name</th><th>Group</th><th>Layer</th></tr></thead>
+            <tbody>
+              ${catalog.map(
+                (s) => html`<tr><td>${s.name}</td><td>${s.group}</td><td class="mono">${s.layer}</td></tr>`,
+              )}
+            </tbody>
+          </table>
+        </section>
+        <section class="panel">
+          <h2>Editor</h2>
+          <textarea
+            class="editor"
+            rows="18"
+            value=${draft}
+            onInput=${(e: Event) => {
+              draft = (e.target as HTMLTextAreaElement).value;
+            }}
+          >${draft}</textarea>
+          <div style="display:flex;gap:.5rem;margin-top:.75rem;flex-wrap:wrap">
+            <button
+              class="btn secondary"
+              onClick=${async () => {
+                try {
+                  const res = await rpc<any>('testSignalMarkdown', { markdown: draft, ...filterParams() });
+                  finding = res.finding;
+                  status = finding?.triggered ? `Triggered: ${finding.message}` : 'Clean against current sample.';
+                  paint(view());
+                } catch (err) {
+                  status = err instanceof Error ? err.message : String(err);
+                  paint(view());
+                }
+              }}
+            >Live test</button>
+            <button
+              class="btn"
+              onClick=${async () => {
+                try {
+                  const res = await rpc<any>('savePersonalSignal', { markdown: draft });
+                  status = `Saved & approved ${res.filePath}`;
+                  state.cache.clear();
+                  paint(view());
+                } catch (err) {
+                  status = err instanceof Error ? err.message : String(err);
+                  paint(view());
+                }
+              }}
+            >Save to ~/.cadence</button>
+          </div>
+          ${status ? html`<p class="muted" style="margin-top:.75rem">${status}</p>` : null}
+          ${finding ? html`<pre class="codeblock">${JSON.stringify(finding, null, 2)}</pre>` : null}
+        </section>
+      </div>
+    </div>
+  `;
+  return view();
+}
+
+async function pageLab() {
+  let expression = 'messageLength < 30 AND messageLength > 0';
+  let result: any = null;
+  let error = '';
+  const fields = await query<any>('getFieldBrowser');
+
+  const view = () => html`
+    <div class="page">
+      ${header('Signal Lab', 'Run predicates over a live sample of request fields.')}
       <section class="panel">
-        <p>Create <span class="mono">~/.cadence/signals/*.signal.md</span> or <span class="mono">.cadence/signals/*.signal.md</span>.</p>
-        <p class="muted" style="margin-top:0.75rem">Local signals require explicit approval (Cadence: Review Local Signals) before they evaluate.</p>
-        <p style="margin-top:1rem">See <strong>docs/SIGNALS.md</strong> for the SignalSpec format, thresholds, and tests.</p>
+        <label class="muted">Expression</label>
+        <input
+          class="editor-input"
+          value=${expression}
+          onInput=${(e: Event) => {
+            expression = (e.target as HTMLInputElement).value;
+          }}
+        />
+        <p class="muted" style="margin-top:.5rem">Fields: ${(fields.fields || []).join(', ')}. Use AND / OR.</p>
+        <button
+          class="btn"
+          style="margin-top:.75rem"
+          onClick=${async () => {
+            try {
+              result = await rpc('evaluateLab', { expression, ...filterParams() });
+              error = '';
+            } catch (err) {
+              error = err instanceof Error ? err.message : String(err);
+              result = null;
+            }
+            paint(view());
+          }}
+        >Evaluate</button>
+        ${error ? html`<div class="banner" style="margin-top:1rem">${error}</div>` : null}
+        ${result
+          ? html`<div class="metric-row" style="margin-top:1rem">
+              <div class="metric"><div class="label">Matched</div><div class="value mono">${result.matched}</div></div>
+              <div class="metric"><div class="label">Sample size</div><div class="value mono">${result.total}</div></div>
+              <div class="metric"><div class="label">Ratio</div><div class="value mono">${Math.round(result.ratio * 100)}%</div></div>
+            </div>`
+          : null}
       </section>
     </div>
   `;
+  return view();
 }
 
-function pageLab() {
+async function pageHub() {
+  const data = await query<any>('getHub');
   return html`
     <div class="page">
-      ${header('Signal Lab', 'Interactive playground for predicates over session fields.')}
+      ${header('Hub', 'Issue/PR linkage and Copilot App signals from local session text.')}
+      <div class="banner">${data.disclaimer}</div>
+      <div class="metric-row">
+        <div class="metric"><div class="label">Sessions</div><div class="value mono">${data.sessions}</div></div>
+        <div class="metric"><div class="label">With issue link</div><div class="value mono">${data.withIssue}</div></div>
+        <div class="metric"><div class="label">With PR link</div><div class="value mono">${data.withPr}</div></div>
+        <div class="metric"><div class="label">Copilot App</div><div class="value mono">${data.copilotAppSessions}</div></div>
+      </div>
       <section class="panel">
-        <p>Useful fields: <span class="mono">messageLength</span>, <span class="mono">toolCount</span>, <span class="mono">isCanceled</span>, <span class="mono">hour</span>, <span class="mono">dayOfWeek</span>, <span class="mono">modelId</span>.</p>
-        <p class="muted" style="margin-top:0.75rem">Built-in signals live in <span class="mono">src/signals/catalog.ts</span>. Extend them, then reload.</p>
+        <h2>Relative issue spend</h2>
+        <table>
+          <thead><tr><th>Issue</th><th>Sessions</th><th>Requests</th><th>%</th></tr></thead>
+          <tbody>
+            ${(data.issueRows || []).length === 0
+              ? html`<tr><td colspan="4" class="muted">No early-turn issue links found in range.</td></tr>`
+              : data.issueRows.map(
+                  (r: any) => html`<tr><td class="mono">${r.issue}</td><td class="mono">${r.sessions}</td><td class="mono">${r.requests}</td><td class="mono">${r.pct}%</td></tr>`,
+                )}
+          </tbody>
+        </table>
       </section>
     </div>
   `;
@@ -497,14 +622,15 @@ async function pageSkills() {
   const rows = await query<any[]>('getSkillCandidates');
   return html`
     <div class="page">
-      ${header('Skill Match', 'Repeated prompts that want to become reusable skills.')}
+      ${header('Skill Match', 'Repeated prompts with draft SKILL.md you can copy and refine.')}
       <section class="panel list">
         ${rows.length === 0
           ? html`<div class="empty"><h2>No repeats yet</h2><p>As prompts recur, Cadence will suggest skill drafts here.</p></div>`
           : rows.map(
               (r) => html`<article>
-                <strong>${r.count}×</strong> ${r.prompt}
+                <strong>${r.count}×</strong> ${r.sample}
                 <div class="muted">${r.suggestion}</div>
+                <pre class="codeblock">${r.draftMarkdown}</pre>
               </article>`,
             )}
       </section>
@@ -533,23 +659,55 @@ async function pageContext() {
 }
 
 async function pagePractice() {
-  const practice = await query<any[]>('getPracticeScores');
-  return html`
-    <div class="page">
-      ${header('Practice', 'Personalized drills based on your weakest practice groups.')}
-      <section class="panel list">
-        ${practice
-          .slice()
-          .sort((a, b) => a.score - b.score)
-          .map(
-            (p) => html`<article>
-              <strong>${p.label}</strong> · score <span class="mono">${p.score}</span>
-              <div class="muted">Focus: ${(p.findings.filter((f: any) => f.triggered)[0]?.improvement) || 'Keep the streak — this area looks healthy.'}</div>
-            </article>`,
-          )}
-      </section>
-    </div>
-  `;
+  const pack = await query<any>('getPracticePack');
+  let quizIndex = 0;
+  let score = 0;
+  let answered = 0;
+  let feedback = '';
+
+  const view = () => {
+    const q = pack.quiz[quizIndex];
+    return html`
+      <div class="page">
+        ${header('Practice', `Focus: ${pack.focusLabel}`, `Score ${pack.score}`)}
+        <section class="panel">
+          <h2>Drills</h2>
+          <div class="list">
+            ${(pack.drills || []).map((d: string) => html`<article>${d}</article>`)}
+          </div>
+        </section>
+        <section class="panel">
+          <h2>Quiz ${answered ? `· ${score}/${answered} correct` : ''}</h2>
+          ${!q
+            ? html`<p class="muted">No quiz items for this range — keep coding and reload.</p>`
+            : html`
+                <p><strong>${q.prompt}</strong></p>
+                <div class="list" style="margin-top:.75rem">
+                  ${q.choices.map(
+                    (c: string, i: number) => html`<button
+                      class="btn secondary"
+                      style="justify-self:start;border-radius:10px"
+                      onClick=${() => {
+                        answered += 1;
+                        if (i === q.answerIndex) {
+                          score += 1;
+                          feedback = `Correct. ${q.explain}`;
+                        } else {
+                          feedback = `Not quite. Better: ${q.choices[q.answerIndex]}`;
+                        }
+                        quizIndex = Math.min(quizIndex + 1, pack.quiz.length);
+                        paint(view());
+                      }}
+                    >${c}</button>`,
+                  )}
+                </div>
+                ${feedback ? html`<p class="muted" style="margin-top:.75rem">${feedback}</p>` : null}
+              `}
+        </section>
+      </div>
+    `;
+  };
+  return view();
 }
 
 async function pageMarks() {
