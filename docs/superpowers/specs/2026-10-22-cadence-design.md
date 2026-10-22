@@ -128,6 +128,11 @@ cadence/
 4. **First-run Overview** with harness detection checklist and fixture demo mode.
 5. **`npm run preview`** browser dashboard for contributors without Extension Development Host.
 6. **Contributor docs**: architecture, SignalSpec authoring, marketplace publish, adapting/forking.
+7. **REA-grade agent surface**: CLI + stdio MCP + doctor + evidence provenance + agent skill (methodology from morluto/rea, not its RE engines).
+
+## Second reverse-engineering pass (morluto/rea)
+
+REA’s `analyze_javascript_application` against AI Engineer Coach confirmed module weights (`src/core` ≫ `src/webview`), worker usage (`cache-write-worker`), and non-Electron nature. Cadence adopted REA’s *evidence / doctor / dual CLI·MCP* practices; see `docs/REA-REVERSE-ENGINEERING.md`.
 
 ## Non-goals (this slice)
 

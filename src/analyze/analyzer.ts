@@ -459,6 +459,7 @@ export class Analyzer {
       message,
       improvement,
       examples,
+      evidence: { state: 'derived', confidence: 'high', authority: 'signal-engine' },
     });
 
     return [

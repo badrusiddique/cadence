@@ -110,6 +110,11 @@ export function evaluateSignals(signals: SignalDefinition[], sessions: Session[]
       }),
       improvement: signal.howToImprove,
       examples,
+      evidence: {
+        state: 'derived',
+        confidence: 'high',
+        authority: 'signal-engine',
+      },
     };
   });
 }

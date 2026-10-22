@@ -29,7 +29,10 @@ Cadence is an original project. It explores the same problem space as Microsoft�
 | Token/burndown hidden | **Budget** enabled with explicit “estimate, not billing” labeling |
 | No Cursor transcripts | Dedicated **Cursor** harness |
 | Hard to try without logs | Demo fixtures + `npm run preview` browser dashboard |
+| Agent-only workflows | **CLI + stdio MCP** + doctor + agent skill (REA-grade dual surface) |
 | Contributor onboarding | Architecture notes, SignalSpec docs, AGENTS.md |
+
+Cadence was reverse-engineered against [AI Engineer Coach](https://github.com/microsoft/ai-engineering-coach) and hardened with methodology from [REA](https://github.com/morluto/rea) (evidence tags, doctor, MCP/CLI). Details: [docs/REA-REVERSE-ENGINEERING.md](docs/REA-REVERSE-ENGINEERING.md).
 
 ## Install
 
@@ -57,6 +60,19 @@ npm run preview
 ```
 
 Open [http://127.0.0.1:43127](http://127.0.0.1:43127) for the fixture-backed dashboard.
+
+## CLI and MCP
+
+```bash
+npm run cli -- doctor --json
+npm run cli -- overview --demo --json
+npm run cli -- habits --demo --json
+npm run mcp                  # stdio MCP for Cursor / Claude / Codex
+npm run setup:mcp            # dry-run MCP registration plan
+npm run setup:mcp -- --yes   # write after you approve
+```
+
+Agent skill: [`.agents/skills/cadence-insights/SKILL.md`](.agents/skills/cadence-insights/SKILL.md).
 
 ## Supported harnesses
 
@@ -93,7 +109,9 @@ npm run preview    # UI against fixtures
 | `src/signals/` | Habit SignalSpec engine + catalog |
 | `src/ui/` | Preact dashboard |
 | `src/host/` | VS Code panel, chat, tools |
-| `docs/` | Signals + marketplace guides |
+| `src/cli/` | Doctor + overview/habits/export |
+| `src/mcp/` | Stdio MCP server |
+| `docs/` | Signals, marketplace, architecture, REA notes |
 
 See [docs/SIGNALS.md](docs/SIGNALS.md) to author habits, and [docs/MARKETPLACE.md](docs/MARKETPLACE.md) to publish.
 

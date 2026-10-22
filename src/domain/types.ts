@@ -114,6 +114,12 @@ export interface HabitFinding {
   message: string;
   improvement: string;
   examples: string[];
+  /** Provenance — derived from session rows via SignalSpec (not a raw log field). */
+  evidence?: {
+    state: 'derived';
+    confidence: 'high' | 'medium';
+    authority: 'signal-engine';
+  };
 }
 
 export interface PracticeScore {

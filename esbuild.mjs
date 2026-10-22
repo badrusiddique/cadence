@@ -43,6 +43,15 @@ async function build() {
     format: 'cjs',
   });
 
+  const cli = await esbuild.context({
+    ...shared,
+    entryPoints: [join(__dirname, 'src/cli/main.ts')],
+    outfile: join(__dirname, 'dist/cli.cjs'),
+    platform: 'node',
+    format: 'cjs',
+    external: ['vscode'],
+  });
+
   const cssPath = join(__dirname, 'src/ui/theme.css');
   const cssOut = join(__dirname, 'dist/webview.css');
   const copyCss = () => writeFileSync(cssOut, readFileSync(cssPath, 'utf8'));
@@ -56,11 +65,11 @@ async function build() {
   }
 
   if (watch) {
-    await Promise.all([extension.watch(), webview.watch(), worker.watch()]);
+    await Promise.all([extension.watch(), webview.watch(), worker.watch(), cli.watch()]);
     console.log('watching…');
   } else {
-    await Promise.all([extension.rebuild(), webview.rebuild(), worker.rebuild()]);
-    await Promise.all([extension.dispose(), webview.dispose(), worker.dispose()]);
+    await Promise.all([extension.rebuild(), webview.rebuild(), worker.rebuild(), cli.rebuild()]);
+    await Promise.all([extension.dispose(), webview.dispose(), worker.dispose(), cli.dispose()]);
   }
 }
 

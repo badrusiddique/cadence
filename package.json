@@ -21,6 +21,10 @@
     "url": "https://github.com/badrusiddique/cadence/issues"
   },
   "homepage": "https://github.com/badrusiddique/cadence#readme",
+  "bin": {
+    "cadence": "scripts/cadence.mjs",
+    "cadence-insights": "scripts/cadence.mjs"
+  },
   "engines": {
     "vscode": "^1.125.0",
     "node": ">=20"
@@ -267,6 +271,9 @@
     "check": "npm run typecheck && npm run lint && npm run test",
     "package": "npm run build && vsce package --no-dependencies",
     "preview": "node scripts/preview-server.mjs",
+    "cli": "node scripts/cadence.mjs",
+    "mcp": "node scripts/cadence.mjs mcp",
+    "setup:mcp": "node scripts/setup-mcp.mjs",
     "gen:signals": "node scripts/gen-signals.mjs",
     "gen:fixtures": "node scripts/gen-fixtures.mjs"
   },

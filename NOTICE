@@ -14,6 +14,17 @@ the same kinds of on-disk session log formats that many AI coding tools already
 write (JSONL / SQLite / chat session files). Those log formats are owned by
 their respective tool vendors.
 
+Methodology prior art
+---------------------
+Engineering practices for agent-facing local tooling — evidence provenance
+(observed / derived / inferred), doctor probes, compact MCP schemas, dual
+CLI/MCP surfaces, and agent skills — were studied in morluto’s “REA: Reverse
+Engineer Anything” project (MIT License): https://github.com/morluto/rea
+
+Cadence does not include REA’s reverse-engineering engines, bridges, or tool
+catalog. REA was also used as a static analysis aid when mapping the AI
+Engineer Coach JavaScript module graph; see docs/REA-REVERSE-ENGINEERING.md.
+
 Third-party licenses
 --------------------
 

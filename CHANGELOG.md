@@ -10,3 +10,6 @@
 - Chat participant `@cadence` and language-model tools.
 - Fixture demo mode + `npm run preview` browser dashboard.
 - Marketplace packaging docs for VS Marketplace / Open VSX.
+- CLI (`cadence doctor|overview|habits|export|mcp`) and stdio MCP server.
+- Evidence provenance tags (observed / derived / inferred) and agent skill.
+- Reverse-engineering notes from REA analysis of AI Engineer Coach.
