@@ -622,6 +622,43 @@ tr.clickable:hover td { background: var(--surface-hover); }
   box-shadow: 0 0 0 1px var(--border-subtle);
 }
 
+.range-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+.range-chips button {
+  border: 1px solid var(--border-subtle);
+  background: var(--surface-overlay);
+  color: var(--text-muted);
+  font: inherit;
+  font-size: 10.5px;
+  font-weight: 600;
+  padding: 4px 7px;
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+.range-chips button.active {
+  border-color: var(--accent-border);
+  color: var(--accent);
+  background: var(--accent-muted);
+}
+
+.day-timeline { display: grid; gap: 10px; }
+.day-block .day-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.day-block .day-head strong {
+  font-family: var(--font-mono);
+  font-size: 13px;
+}
+
 .ws-toggle {
   display: flex;
   gap: 4px;

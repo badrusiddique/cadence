@@ -12,14 +12,15 @@ Cadence is a local-first VS Code extension that reads your AI coding session log
 
 ## Why Cadence
 
-If you use Copilot, Claude Code, Codex, Cursor, OpenCode, or similar harnesses, your best coaching data is already on disk. Cadence makes it visible:
+If you use Copilot, Claude Code, Codex, Cursor, OpenCode, or similar harnesses, your best coaching data is already on disk. Cadence makes it visible — **locally**, without a cloud coaching dependency:
 
-- **Observe** — dashboard, session timeline (with turn drill-down), coding moments  
-- **Measure** — output, burndown estimates, patterns, curiosity, flow, hub  
-- **Improve** — 45 habit signals, rule studio, signal lab, skill finder, context health  
+- **Observe** — dashboard, day-grouped timeline + turn drill-down, coding moments  
+- **Measure** — multi-mode output charts, burndown estimates, patterns, curiosity, flow, hub  
+- **Improve** — 45 habit signals, rule studio, signal lab (with predicate reference), skill finder, context health  
 - **Level Up** — practice focus, achievements, lifecycle mix, shareable snapshot  
+- **Adapt** — Lab → SignalSpec Studio → local trust gate → CLI/MCP for agents  
 
-Cadence is an original project. It explores the same problem space as Microsoft’s MIT-licensed [AI Engineer Coach](https://github.com/microsoft/ai-engineering-coach) but ships its own product identity, architecture, UI, and packaging. See [NOTICE](NOTICE).
+Cadence is an original project. It explores the same problem space as Microsoft’s MIT-licensed [AI Engineer Coach](https://github.com/microsoft/ai-engineering-coach) but ships its own product identity, architecture, UI, and packaging. See [NOTICE](NOTICE). Honest comparison notes: [docs/QA-AEC-VS-CADENCE.md](docs/QA-AEC-VS-CADENCE.md).
 
 ## Gaps closed vs common prior art
 

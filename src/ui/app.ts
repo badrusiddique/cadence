@@ -99,11 +99,21 @@ const OUTPUT_MODES = [
   { id: 'daily-harness', label: 'Daily × harness' },
 ] as const;
 
+const DATE_RANGES = [
+  { id: '7d', label: '7d', days: 7 },
+  { id: '28d', label: '28d', days: 28 },
+  { id: '90d', label: '90d', days: 90 },
+  { id: '180d', label: '180d', days: 180 },
+  { id: 'all', label: 'All', days: 0 },
+] as const;
+
 const state = {
   page: 'overview' as PageId,
   filter: { workspaceId: '', harness: '' },
   wsScope: 'all' as 'current' | 'all',
   wsSearch: '',
+  dateRange: '28d' as (typeof DATE_RANGES)[number]['id'],
+  timelineView: 'day' as 'day' | 'list',
   outputMode: 'code-output' as string,
   patternsTab: 'work-hours' as 'work-hours' | 'calendar' | 'projects',
   habitsTab: 'findings' as 'findings' | 'rules',
@@ -165,6 +175,20 @@ function cycleTheme() {
   paint();
 }
 
+function rangeBounds(): { fromDate?: string; toDate?: string } {
+  if (state.dateRange === 'all') return {};
+  const spec = DATE_RANGES.find((r) => r.id === state.dateRange);
+  const days = spec?.days || 28;
+  const anchor = state.meta?.latestActivityAt || Date.now();
+  const to = new Date(anchor);
+  const from = new Date(anchor);
+  from.setUTCDate(from.getUTCDate() - (days - 1));
+  return {
+    fromDate: from.toISOString().slice(0, 10),
+    toDate: to.toISOString().slice(0, 10),
+  };
+}
+
 function filterParams() {
   let workspaceId = state.filter.workspaceId || undefined;
   if (state.wsScope === 'current' && !workspaceId) {
@@ -173,6 +197,7 @@ function filterParams() {
   return {
     workspaceId,
     harness: state.filter.harness || undefined,
+    ...rangeBounds(),
   };
 }
 
@@ -299,6 +324,18 @@ function shell(content: ReturnType<typeof html>) {
               void refresh();
             }}
           >All</button>
+        </div>
+        <div class="range-chips" title="Anchored to latest local activity">
+          ${DATE_RANGES.map(
+            (r) => html`<button
+              class=${state.dateRange === r.id ? 'active' : ''}
+              onClick=${() => {
+                state.dateRange = r.id;
+                state.cache.clear();
+                void refresh();
+              }}
+            >${r.label}</button>`,
+          )}
         </div>
         <input
           class="search-input"
@@ -522,29 +559,69 @@ async function pageSessions() {
   }
 
   const rows = await query<any[]>('getTimeline');
+  const days = await query<any[]>('getTimelineByDay');
   state.badges = { ...state.badges, sessions: rows.length };
   return html`
     <div class="page">
-      ${header('Timeline', 'Session timeline across harnesses — click a row for turn detail.', `${rows.length} sessions`)}
-      <section class="panel">
-        <table>
-          <thead><tr><th>When</th><th>Workspace</th><th>Harness</th><th>Turns</th><th>LOC</th><th>Title</th></tr></thead>
-          <tbody>
-            ${rows.length === 0
-              ? html`<tr><td colspan="6" class="muted">No sessions in this filter.</td></tr>`
-              : rows.map(
-                  (r) => html`<tr class="clickable" onClick=${() => { state.selectedSessionId = r.sessionId; void refresh(); }}>
-                    <td class="mono">${r.startedAt ? new Date(r.startedAt).toLocaleString() : '—'}</td>
-                    <td>${r.workspaceName}</td>
-                    <td>${r.harness}</td>
-                    <td class="mono">${r.requestCount}</td>
-                    <td class="mono">${r.aiLoc ?? '—'}</td>
-                    <td>${r.title}</td>
-                  </tr>`,
+      ${header('Timeline', 'Day overview or flat list — click a session for turn detail.', `${rows.length} sessions`)}
+      ${seg(
+        [
+          { id: 'day', label: 'By day' },
+          { id: 'list', label: 'List' },
+        ],
+        state.timelineView,
+        (id) => {
+          state.timelineView = id as 'day' | 'list';
+          void refresh();
+        },
+      )}
+      ${state.timelineView === 'day'
+        ? html`<div class="day-timeline">
+            ${days.length === 0
+              ? html`<section class="panel"><div class="empty"><h2>No sessions</h2><p>Widen the date range or sync harness logs.</p></div></section>`
+              : days.map(
+                  (d) => html`<section class="panel day-block">
+                    <div class="day-head">
+                      <strong>${d.date === 'unknown' ? 'Untimed' : d.date}</strong>
+                      <span class="muted">${d.sessionCount} sessions · ${d.requests} turns · ${fmtLoc(d.aiLoc)} LOC · ${d.harnesses.join(', ')}</span>
+                    </div>
+                    <table>
+                      <thead><tr><th>When</th><th>Workspace</th><th>Harness</th><th>Turns</th><th>LOC</th><th>Title</th></tr></thead>
+                      <tbody>
+                        ${d.sessions.map(
+                          (r: any) => html`<tr class="clickable" onClick=${() => { state.selectedSessionId = r.sessionId; void refresh(); }}>
+                            <td class="mono">${r.startedAt ? new Date(r.startedAt).toLocaleTimeString() : '—'}</td>
+                            <td>${r.workspaceName}</td>
+                            <td>${r.harness}</td>
+                            <td class="mono">${r.requestCount}</td>
+                            <td class="mono">${r.aiLoc ?? '—'}</td>
+                            <td>${r.title}</td>
+                          </tr>`,
+                        )}
+                      </tbody>
+                    </table>
+                  </section>`,
                 )}
-          </tbody>
-        </table>
-      </section>
+          </div>`
+        : html`<section class="panel">
+            <table>
+              <thead><tr><th>When</th><th>Workspace</th><th>Harness</th><th>Turns</th><th>LOC</th><th>Title</th></tr></thead>
+              <tbody>
+                ${rows.length === 0
+                  ? html`<tr><td colspan="6" class="muted">No sessions in this filter.</td></tr>`
+                  : rows.map(
+                      (r) => html`<tr class="clickable" onClick=${() => { state.selectedSessionId = r.sessionId; void refresh(); }}>
+                        <td class="mono">${r.startedAt ? new Date(r.startedAt).toLocaleString() : '—'}</td>
+                        <td>${r.workspaceName}</td>
+                        <td>${r.harness}</td>
+                        <td class="mono">${r.requestCount}</td>
+                        <td class="mono">${r.aiLoc ?? '—'}</td>
+                        <td>${r.title}</td>
+                      </tr>`,
+                    )}
+              </tbody>
+            </table>
+          </section>`}
     </div>
   `;
 }
@@ -1026,7 +1103,8 @@ async function pageStudio() {
 
   const view = () => html`
     <div class="page">
-      ${header('Rule Studio', 'Author, live-test, and save personal SignalSpec files.', `${catalog.length} signals`)}
+      ${header('Rule Studio', 'Author, live-test, and save personal SignalSpec files. Durable rules live under ~/.cadence.', `${catalog.length} signals`)}
+      <div class="banner ok">Adapt path: explore in Signal Lab → paste a SignalSpec here → Live test → Save (local trust gate). Full authoring guide in docs/SIGNALS.md.</div>
       <div class="grid-2">
         <section class="panel">
           <h2>Catalog</h2>
@@ -1103,46 +1181,78 @@ async function pageLab() {
   let result: any = null;
   let error = '';
   const fields = await query<any>('getFieldBrowser');
+  const ref = await query<any>('getLabReference');
 
   const view = () => html`
     <div class="page">
-      ${header('Signal Lab', 'Run predicates over a live sample of request fields.')}
-      <section class="panel">
-        <label class="muted">Expression</label>
-        <input
-          class="editor-input"
-          value=${expression}
-          onInput=${(e: Event) => {
-            expression = (e.target as HTMLInputElement).value;
-          }}
-        />
-        <p class="muted" style="margin-top:.5rem">Fields: ${(fields.fields || []).join(', ')}. Use AND / OR.</p>
-        <button
-          class="btn"
-          style="margin-top:.75rem"
-          onClick=${async () => {
-            try {
-              result = await rpc('evaluateLab', { expression, ...filterParams() });
-              error = '';
-            } catch (err) {
-              error = err instanceof Error ? err.message : String(err);
-              result = null;
-            }
-            paint(view());
-          }}
-        >Evaluate</button>
-        ${error ? html`<div class="banner" style="margin-top:1rem">${error}</div>` : null}
-        ${result
-          ? html`<div class="metric-row" style="margin-top:1rem">
-              <div class="metric"><div class="label">Matched</div><div class="value mono">${result.matched}</div></div>
-              <div class="metric"><div class="label">Sample size</div><div class="value mono">${result.total}</div></div>
-              <div class="metric"><div class="label">Ratio</div><div class="value mono">${Math.round(result.ratio * 100)}%</div></div>
-            </div>
-            ${result.samples?.length
-              ? html`<pre class="codeblock">${JSON.stringify(result.samples, null, 2)}</pre>`
-              : null}`
-          : null}
-      </section>
+      ${header('Signal Lab', 'Safe predicates over live request fields — explore before promoting to SignalSpec.')}
+      <div class="grid-2">
+        <section class="panel">
+          <label class="muted">Expression</label>
+          <input
+            class="editor-input"
+            value=${expression}
+            onInput=${(e: Event) => {
+              expression = (e.target as HTMLInputElement).value;
+            }}
+          />
+          <p class="muted" style="margin-top:.5rem">Sample fields: ${(fields.fields || []).join(', ')}.</p>
+          <div style="display:flex;gap:.5rem;margin-top:.75rem;flex-wrap:wrap">
+            <button
+              class="btn"
+              onClick=${async () => {
+                try {
+                  result = await rpc('evaluateLab', { expression, ...filterParams() });
+                  error = '';
+                } catch (err) {
+                  error = err instanceof Error ? err.message : String(err);
+                  result = null;
+                }
+                paint(view());
+              }}
+            >Evaluate</button>
+            ${(ref.examples || []).slice(0, 3).map(
+              (ex: string) => html`<button
+                class="btn secondary"
+                onClick=${() => {
+                  expression = ex;
+                  paint(view());
+                }}
+              >Use: ${ex.length > 28 ? `${ex.slice(0, 28)}…` : ex}</button>`,
+            )}
+          </div>
+          ${error ? html`<div class="banner" style="margin-top:1rem">${error}</div>` : null}
+          ${result
+            ? html`<div class="metric-row" style="margin-top:1rem">
+                <div class="metric"><div class="label">Matched</div><div class="value mono">${result.matched}</div></div>
+                <div class="metric"><div class="label">Sample size</div><div class="value mono">${result.total}</div></div>
+                <div class="metric"><div class="label">Ratio</div><div class="value mono">${Math.round(result.ratio * 100)}%</div></div>
+              </div>
+              ${result.samples?.length
+                ? html`<pre class="codeblock">${JSON.stringify(result.samples, null, 2)}</pre>`
+                : null}`
+            : null}
+        </section>
+        <section class="panel">
+          <h2>Predicate reference</h2>
+          <p class="muted">${ref.tip}</p>
+          <h2 style="margin-top:12px">Operators</h2>
+          <p class="mono" style="font-size:12px">${(ref.operators || []).join('  ')}</p>
+          <h2 style="margin-top:12px">Fields</h2>
+          <table>
+            <thead><tr><th>Field</th><th>Type</th><th>Note</th></tr></thead>
+            <tbody>
+              ${(ref.fields || []).map(
+                (f: any) => html`<tr><td class="mono">${f.name}</td><td>${f.type}</td><td class="muted">${f.note}</td></tr>`,
+              )}
+            </tbody>
+          </table>
+          <h2 style="margin-top:12px">Examples</h2>
+          <div class="list">
+            ${(ref.examples || []).map((ex: string) => html`<article class="mono" style="font-size:12px">${ex}</article>`)}
+          </div>
+        </section>
+      </div>
     </div>
   `;
   return view();

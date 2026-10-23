@@ -1,0 +1,156 @@
+[
+  {
+    "area": "Nav IA",
+    "aec": "Observe/Measure/Improve/Explore(+GitHub App)",
+    "cadence": "Observe/Measure/Improve/Level Up",
+    "winner": "Cadence",
+    "notes": "Level Up split is clearer; Explore folded into Improve without dead pages"
+  },
+  {
+    "area": "Dashboard",
+    "aec": "charts=3 vibe+WoW denser",
+    "cadence": "charts=2 vibe+WoW+recs",
+    "winner": "tie",
+    "notes": "Both charted; AEC denser chips, Cadence clearer recommendations"
+  },
+  {
+    "area": "Timeline",
+    "aec": "Day swimlane calendar",
+    "cadence": "Day-grouped overview + list + turn drill-down",
+    "winner": "tie",
+    "notes": "AEC concurrent swimlane still denser; Cadence day blocks close the Observe gap"
+  },
+  {
+    "area": "Coding Moments",
+    "aec": "Image gallery (empty in harness)",
+    "cadence": "LOC moments populated",
+    "winner": "Cadence",
+    "notes": "Cadence always useful offline; AEC needs screenshots"
+  },
+  {
+    "area": "Output",
+    "aec": "Range chips + 8 modes Chart.js",
+    "cadence": "8 modes Chart.js, no date-range chips",
+    "winner": "tie",
+    "notes": "Parity on modes; AEC still wins range chips"
+  },
+  {
+    "area": "Burndown",
+    "aec": "Gated OFF in harness",
+    "cadence": "Always on + Chart.js",
+    "winner": "Cadence",
+    "notes": "Production-useful where AEC feature-flagged off"
+  },
+  {
+    "area": "Patterns",
+    "aec": "Work Hours/Calendar/Projects (+ JS error this run)",
+    "cadence": "Same three tabs + heatmap + charts, 0 errors",
+    "winner": "Cadence",
+    "notes": "Functional parity; Cadence more stable this run"
+  },
+  {
+    "area": "Curiosity",
+    "aec": "Multi-panel + pagination + range chips",
+    "cadence": "Channel mix + daily charts + languages",
+    "winner": "tie",
+    "notes": "AEC more chrome; Cadence covers inquiry/action balance"
+  },
+  {
+    "area": "Flow",
+    "aec": "Buried / Level Up path",
+    "cadence": "First-class page",
+    "winner": "Cadence",
+    "notes": ""
+  },
+  {
+    "area": "Hub / GitHub App",
+    "aec": "Productivity + Issue credits (DB; often empty/error)",
+    "cadence": "Local text Hub",
+    "winner": "split",
+    "notes": "AEC deeper with Copilot App DB; Cadence honest local estimates"
+  },
+  {
+    "area": "Anti-Patterns / Rules",
+    "aec": "DSL editor, coverage, AI generate, help",
+    "cadence": "Findings + Rules coverage + Studio/Lab",
+    "winner": "AEC",
+    "notes": "AEC DSL richer; Cadence authoring loop works end-to-end"
+  },
+  {
+    "area": "Skill Finder",
+    "aec": "Custom + community + Analyze",
+    "cadence": "Custom drafts + offline community catalog",
+    "winner": "tie",
+    "notes": "Cadence offline catalog; AEC Analyze UX denser"
+  },
+  {
+    "area": "Context Health",
+    "aec": "Quality/Management + treemap + Review files",
+    "cadence": "Quality/Management + charts + workspace weight",
+    "winner": "tie",
+    "notes": "AEC Review Context Files still unique"
+  },
+  {
+    "area": "Level Up / Practice",
+    "aec": "⚠️ Failed to render Level Up Cannot read properties of undefined (reading 'length') Try reloading the dashboard (Ctrl+Shift+P → \"AI Engineer Coach: Reload Data\")",
+    "cadence": "Practice + Achievements + Lifecycle + Share",
+    "winner": "Cadence",
+    "notes": "AEC Level Up failed in harness again"
+  },
+  {
+    "area": "Data Explorer",
+    "aec": "⚠️ Failed to render Data Explorer\n\nCannot read properties of undefined (reading ",
+    "cadence": "Working field sample table",
+    "winner": "Cadence",
+    "notes": "AEC explorer crashed in harness"
+  },
+  {
+    "area": "Filters",
+    "aec": "Current/All + search + harness + range chips",
+    "cadence": "Current/All + search + harness + date range chips (7d–All)",
+    "winner": "tie",
+    "notes": "Parity on primary filters; AEC combobox chrome still different"
+  },
+  {
+    "area": "Theme",
+    "aec": "VS Code tokens",
+    "cadence": "Explicit light/dark/system",
+    "winner": "Cadence",
+    "notes": ""
+  },
+  {
+    "area": "Stability (this run)",
+    "aec": "1 page JS errors; Level Up/Data Explorer/GitHub App failures",
+    "cadence": "0 page JS errors",
+    "winner": "Cadence",
+    "notes": ""
+  },
+  {
+    "area": "LM tools",
+    "aec": "12 tools",
+    "cadence": "13 tools (summary/activity/budget/throughput/flow/habits/compare/patterns/insights/wellbeing/sessions/context/curiosity)",
+    "winner": "Cadence",
+    "notes": "Cadence caught up post-superiority"
+  },
+  {
+    "area": "CLI + MCP + doctor",
+    "aec": "Not primary",
+    "cadence": "First-class",
+    "winner": "Cadence",
+    "notes": "Dual-surface for agents and humans"
+  },
+  {
+    "area": "Settings",
+    "aec": "None in contributes.configuration",
+    "cadence": "demoMode, budgetSku, customBudgetCredits",
+    "winner": "Cadence",
+    "notes": ""
+  },
+  {
+    "area": "Adaptability (signals)",
+    "aec": "Rich DSL + playground",
+    "cadence": "SignalSpec Studio + Lab predicate reference + trust gate + docs/SIGNALS.md",
+    "winner": "Cadence",
+    "notes": "Clearer adapt loop for contributors; AEC DSL still more expressive"
+  }
+]

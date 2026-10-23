@@ -34,6 +34,17 @@ describe('Analyzer', () => {
     expect(habits.some((h) => h.id === 'thin-prompts')).toBe(true);
   });
 
+  it('groups timeline by day and exposes lab reference', () => {
+    const a = makeAnalyzer();
+    const days = a.getTimelineByDay();
+    expect(days.length).toBeGreaterThan(0);
+    expect(days[0]!.sessions.length).toBeGreaterThan(0);
+    expect(a.getMeta().latestActivityAt).toBeGreaterThan(0);
+    const ref = a.getLabReference();
+    expect(ref.fields.length).toBeGreaterThan(4);
+    expect(ref.examples[0]).toMatch(/messageLength/);
+  });
+
   it('exports markdown snapshot', () => {
     const summary = makeAnalyzer().exportSummary();
     expect(summary.markdown).toContain('# Cadence Snapshot');

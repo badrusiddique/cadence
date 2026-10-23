@@ -2,6 +2,7 @@
 
 ## 0.1.0 — 2026-10-22
 
+- Senior-review hardening: date range chips (7d–All), day-grouped Timeline, Signal Lab predicate reference + adapt docs; fresh dual QA matrix in `docs/qa-matrix-v2.json`.
 - Superiority pass vs AEC: Chart.js on Dashboard/Output/Patterns/Curiosity/Context/Flow/Burndown/Hub/Lifecycle; Output 8 modes; Patterns Calendar/Projects; Anti-Patterns Rules coverage; Skill Finder community catalog; Current/All + workspace search; practice WoW + vibe; LM tools for patterns/insights/wellbeing/sessions/context/curiosity.
 - Initial public release of **Cadence**.
 - Local ingest for VS Code/Copilot, Cursor, Copilot CLI, Claude Code, Codex, OpenCode.

@@ -1,8 +1,7 @@
 # Manual QA: AI Engineering Coach vs Cadence
 
-**Date:** 2026-10-22 (America/Los_Angeles)  
-**Live report canvas:** open the agent canvas *AEC vs Cadence Manual QA Report* from this run.  
-**Evidence:** `/opt/cursor/artifacts/qa-compare/` (screenshots + JSON)
+**Date:** 2026-10-23 (America/Los_Angeles) — dual walk v2 + senior-review hardening  
+**Evidence:** `/opt/cursor/artifacts/qa-compare-v2/` (fresh screenshots + JSON); prior pass in `/opt/cursor/artifacts/qa-compare/`
 
 ## Instances
 
@@ -13,24 +12,28 @@
 
 Extension commands / chat / LM tools were inventoried from `package.json` (both VSIXes were not co-installed in one VS Code window in this VM).
 
-## Verdict (post superiority pass)
+## Verdict (dual walk v2 — honest)
 
-- **Preferred product in all shipped surfaces: Cadence** — closed the Measure/Improve analytics gaps with clean-room Chart.js pages, deep RPCs, Rules coverage, Skill community catalog, Current/All + workspace search, WoW practice deltas, and expanded LM tools — while keeping Cadence-led axes (Burndown always on, Flow/Hub/Share, Signal Lab, theme, CLI/MCP, Level Up split, zero page crashes).
-- Cadence remains a clean-room reverse-engineer, **not** a line-for-line port. Intentionally out of scope: AEC GitHub App SQLite cloud sync and image gallery (no remote telemetry dependency).
+- **Preferred for production local coaching: Cadence** on most comparable surfaces.
+- Fresh matrix counts: **Cadence 12 · tie 5 · AEC 3 · split 2** (see `matrix.json` under evidence).
+- **Not 100% AEC clone.** AEC still denser on concurrent Timeline swimlane chrome and full Rules DSL/AI-generate. Cadence deliberately does **not** ship GitHub App SQLite or screenshot galleries.
+- AEC harness this run: Patterns JS error; Level Up / Data Explorer / GitHub App failed to render. Cadence: **0 page JS errors**.
 
-## Scoreboard (24 areas)
+## Chase / defer (locked 2026-10-23)
 
-Updated after superiority work: Cadence matches or exceeds AEC on every comparable row. Remaining AEC-only rows are extension-cloud features Cadence deliberately does not ship (GitHub App productivity DB).
+| Chase | Defer |
+|---|---|
+| Date range chips (7d–All) | GitHub App productivity DB |
+| Day-grouped Timeline | Screenshot image gallery |
+| Lab/Studio predicate + SignalSpec adapt docs | Full DSL compiler + AI rule generate |
 
-## Pages walked
+Design note: `docs/superpowers/specs/2026-10-23-senior-review-hardening-design.md`.
 
-- **AEC (14):** Dashboard, Timeline, Coding Moments, Output, Patterns, Curiosity, Anti-Patterns (+ Rules workflows), Skill Finder, Context Health, Level Up *(error)*, Data Explorer *(error)*, Rule Playground, GitHub App Productivity, Issue credits. Burndown absent (`FF_TOKEN_REPORTING_ENABLED=false`).
-- **Cadence (19):** Dashboard (Chart.js + WoW + vibe), Timeline (+ session detail), Moments, Output (8 modes), Burndown (Chart.js), Patterns (Work hours / Calendar / Projects), Curiosity (mix + daily charts), Flow, Hub, Anti-Patterns (+ Rules coverage), Rule Studio, Signal Lab, Data Explorer, Skill Finder (custom + community), Context Health (quality + management), Practice, Achievements, Lifecycle, Share.
+## Pages walked (v2)
 
-## Closed gaps (this pass)
+- **AEC (14):** Dashboard, Timeline, Coding Moments, Output, Patterns *(JS error)*, Curiosity, Anti-Patterns (+ Rules), Skill Finder, Context Health, Level Up *(fail)*, Data Explorer *(fail)*, Rule Playground, GitHub App *(fail)*, Issue credits. Burndown gated off.
+- **Cadence (19):** Dashboard, Timeline (By day / List + drill-down), Moments, Output (8 modes), Burndown, Patterns (3 tabs), Curiosity, Flow, Hub, Anti-Patterns (+ Rules coverage), Rule Studio, Signal Lab (+ reference), Data Explorer, Skill Finder (custom + community), Context Health, Practice, Achievements, Lifecycle, Share — plus Current/All, workspace search, **date range chips**.
 
-Output multi-mode Chart.js, Patterns Calendar/Projects, Curiosity charts, Anti-Pattern Rules tab + coverage matrix, Skill community catalog, Context quality/management + workspace weight, Current/All workspace scope + search, WoW deltas, LM tools for patterns/insights/wellbeing/sessions/context/curiosity.
+## Why Cadence for senior reviewers
 
-## Key Cadence advantages
-
-Burndown ON, first-class Flow/Hub/Share, Signal Lab, light/dark theme, CLI/MCP/doctor, settings, 0 page errors on fixture preview, working session turn drill-down, Practice/Achievements/Lifecycle when AEC Level Up crashed in harness.
+Stable local coaching, burndown on, dual surface (CLI/MCP), clear adapt loop (Lab → Studio → trust), honest scope. Use the matrix JSON for line-item debate — do not claim pixel parity with AEC.

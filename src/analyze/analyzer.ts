@@ -65,6 +65,8 @@ export class Analyzer {
       workspaces: [...this.workspaces.values()].map((w) => ({ id: w.id, name: w.name })),
       harnesses,
       currentWorkspaceId,
+      latestActivityAt: latest > 0 ? latest : Date.now(),
+      dateRanges: ['7d', '28d', '90d', '180d', 'all'] as const,
     };
   }
 
@@ -227,6 +229,62 @@ export class Analyzer {
         title: s.title || s.requests[0]?.messageText.slice(0, 80) || s.sessionId,
       }))
       .sort((a, b) => (b.startedAt ?? 0) - (a.startedAt ?? 0));
+  }
+
+  /** Day-grouped timeline for Observe overview (clean-room alternative to AEC swimlane). */
+  getTimelineByDay(filter: DateFilter = {}) {
+    const rows = this.getTimeline(filter);
+    const byDay = new Map<
+      string,
+      {
+        date: string;
+        sessions: typeof rows;
+        requests: number;
+        aiLoc: number;
+      }
+    >();
+    for (const r of rows) {
+      const date = dayKey(r.startedAt);
+      if (!byDay.has(date)) byDay.set(date, { date, sessions: [], requests: 0, aiLoc: 0 });
+      const day = byDay.get(date)!;
+      day.sessions.push(r);
+      day.requests += r.requestCount;
+      day.aiLoc += r.aiLoc;
+    }
+    return [...byDay.values()]
+      .sort((a, b) => b.date.localeCompare(a.date))
+      .map((d) => ({
+        date: d.date,
+        sessionCount: d.sessions.length,
+        requests: d.requests,
+        aiLoc: d.aiLoc,
+        harnesses: [...new Set(d.sessions.map((s) => s.harness))],
+        sessions: d.sessions,
+      }));
+  }
+
+  getLabReference() {
+    return {
+      fields: [
+        { name: 'messageLength', type: 'number', note: 'Prompt character count' },
+        { name: 'modelId', type: 'string', note: 'Model identifier' },
+        { name: 'toolCount', type: 'number', note: 'Tools invoked on the turn' },
+        { name: 'aiLoc', type: 'number', note: 'AI-produced lines on the turn' },
+        { name: 'promptTokens', type: 'number', note: 'Prompt tokens when present' },
+        { name: 'isCanceled', type: 'boolean', note: 'Turn canceled by user' },
+        { name: 'workType', type: 'string', note: 'feature | bugfix | refactor | test | docs…' },
+        { name: 'harness', type: 'string', note: 'Source agent harness' },
+      ],
+      operators: ['<', '>', '<=', '>=', '==', '!=', 'AND', 'OR', '(', ')'],
+      examples: [
+        'messageLength < 30 AND messageLength > 0',
+        'aiLoc > 80 AND toolCount < 2',
+        'isCanceled == true',
+        'workType == "test" OR workType == "docs"',
+        'promptTokens > 8000',
+      ],
+      tip: 'Lab predicates are a safe subset for exploration. Persist durable rules as SignalSpec markdown in Rule Studio (trusted locally before load).',
+    };
   }
 
   getSessionDetail(sessionId: string) {

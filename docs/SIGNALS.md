@@ -46,6 +46,32 @@ Template variables available in **When Triggered**: `count`, `total`, `pct`, plu
 4. **Tool Mastery** — modes, skills, slash commands, MCP soup  
 5. **Context Stewardship** — files, instructions, specs, cache  
 
+## Signal Lab predicates
+
+Use **Signal Lab** to probe live request fields before promoting a rule to SignalSpec.
+
+| Operators | ` < > <= >= == != AND OR ( ) ` |
+|---|---|
+| Fields | `messageLength`, `modelId`, `toolCount`, `aiLoc`, `promptTokens`, `isCanceled`, `workType`, `harness` |
+
+Examples:
+
+```
+messageLength < 30 AND messageLength > 0
+aiLoc > 80 AND toolCount < 2
+isCanceled == true
+workType == "test" OR workType == "docs"
+```
+
+Lab is a **safe exploration subset**. Persist durable coaching rules as SignalSpec markdown in Rule Studio; personal files load only after the local trust gate approves them.
+
+## Adapt loop (for contributors)
+
+1. Find a pattern in Dashboard / Anti-Patterns / Data Explorer.  
+2. Probe it in Signal Lab.  
+3. Author SignalSpec in Rule Studio → Live test → Save to `~/.cadence/signals/`.  
+4. Add a Vitest fixture case when the rule is shared in-repo.
+
 ## Tests
 
 Prefer covering new signals with Vitest fixtures (see `src/signals/engine.test.ts`) so contributors can adapt rules safely.

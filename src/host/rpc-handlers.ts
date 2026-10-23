@@ -34,6 +34,10 @@ export async function handleRpc(
       return a.getOverview(filter);
     case 'getTimeline':
       return a.getTimeline(filter);
+    case 'getTimelineByDay':
+      return a.getTimelineByDay(filter);
+    case 'getLabReference':
+      return a.getLabReference();
     case 'getSessionDetail':
       return a.getSessionDetail(String(params.sessionId || ''));
     case 'getHarnessComparison':

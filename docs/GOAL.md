@@ -28,6 +28,10 @@ Cadence is intentionally original (~6–8k LOC). Capability surface tracks AEC�
 | Practice WoW + vibe role | Done | `withWow` / `getVibeRole` |
 | Expanded LM tools | Done | patterns/insights/wellbeing/sessions/context/curiosity |
 | AEC superiority (comparable surfaces) | Done | see `docs/QA-AEC-VS-CADENCE.md` |
+| Date range chips | Done | rail `7d…All` anchored to latest activity |
+| Day-grouped Timeline | Done | `getTimelineByDay` + By day / List |
+| Lab predicate reference | Done | `getLabReference` + SIGNALS.md adapt loop |
+| Honest dual-walk matrix v2 | Done | `docs/qa-matrix-v2.json` |
 | Session detail drill-down | Done | `getSessionDetail` |
 | Harness comparison | Done | `getHarnessComparison` |
 | Flow scoring | Done | `src/analyze/flow.ts` |

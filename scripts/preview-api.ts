@@ -30,6 +30,10 @@ export function handleRpc(method: string, params: Record<string, unknown> = {}):
       return analyzer.getOverview(filter);
     case 'getTimeline':
       return analyzer.getTimeline(filter);
+    case 'getTimelineByDay':
+      return analyzer.getTimelineByDay(filter);
+    case 'getLabReference':
+      return analyzer.getLabReference();
     case 'getSessionDetail':
       return analyzer.getSessionDetail(String(params.sessionId || ''));
     case 'getHarnessComparison':
