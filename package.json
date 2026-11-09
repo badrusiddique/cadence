@@ -2,16 +2,16 @@
   "name": "cadence-insights",
   "displayName": "Cadence — Agent Engineering Insights",
   "description": "Local-first insights for AI coding assistants. Watch sessions, quantify output, refine habits, grow practice — no telemetry, no log mutation.",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "publisher": "badrusiddique",
   "author": {
     "name": "Badru Siddique"
   },
   "license": "MIT",
-  "icon": "assets/icon.png",
+  "icon": "assets/icon-256.png",
   "galleryBanner": {
-    "color": "#E8EEF4",
-    "theme": "light"
+    "color": "#141414",
+    "theme": "dark"
   },
   "repository": {
     "type": "git",

@@ -281,7 +281,13 @@ function shell(content: ReturnType<typeof html>) {
           <div class="brand-mark">Cadence<span>.</span></div>
           <div class="brand-tag">${state.topPattern ? `Top: ${state.topPattern}` : 'Steady your AI practice'}</div>
         </div>
-        <button class="theme-toggle" title="Theme: ${state.theme}" onClick=${cycleTheme}>${themeIcon}</button>
+        <button
+          class="theme-toggle"
+          type="button"
+          title="Theme: ${state.theme}"
+          aria-label=${`Cycle color theme (now ${state.theme})`}
+          onClick=${cycleTheme}
+        >${themeIcon}</button>
       </div>
       ${NAV.map(
         (group) => html`
@@ -630,13 +636,16 @@ async function pageMoments() {
   const rows = await query<any[]>('getMoments');
   return html`
     <div class="page">
-      ${header('Coding Moments', 'High-signal turns inferred from substantial AI edits.')}
+      ${header('Coding Moments', 'High-signal turns inferred from substantial AI edits — no screenshots required.')}
       <div class="list panel">
         ${rows.length === 0
-          ? html`<div class="empty"><h2>No moments yet</h2><p>Substantial AI edits will appear here.</p></div>`
+          ? html`<div class="empty"><h2>No moments yet</h2><p>Substantial AI edits will appear here once you code with an agent.</p></div>`
           : rows.map(
               (m) => html`<article>
-                <strong>${m.workspaceName}</strong> · ${m.harness} · <span class="mono">${m.loc} LOC</span>
+                <div>
+                  <strong>${m.workspaceName}</strong> · ${m.harness} · <span class="mono">${m.loc} LOC</span>
+                </div>
+                <span class="muted mono">${m.timestamp ? new Date(m.timestamp).toLocaleString() : '—'}</span>
                 <div class="muted">${m.caption}</div>
               </article>`,
             )}
@@ -1512,7 +1521,7 @@ async function pageMarks() {
   const data = await query<any>('getAchievements');
   return html`
     <div class="page">
-      ${header('Achievements', 'XP and badges for consistent agentic craft.', data.tier)}
+      ${header('Achievements', 'Optional badges for consistency — coaching lives on Dashboard and Anti-Patterns.', data.tier)}
       <div class="metric-row">
         <div class="metric"><div class="label">XP</div><div class="value mono">${data.xp}</div></div>
         <div class="metric"><div class="label">Tier</div><div class="value">${data.tier}</div></div>
@@ -1532,6 +1541,11 @@ async function pageMarks() {
 async function pageLifecycle() {
   const data = await query<any>('getSdlc');
   const entries = Object.entries(data.phases || {}) as [string, number][];
+  const total = entries.reduce((n, [, v]) => n + v, 0) || 1;
+  const top = [...entries].sort((a, b) => b[1] - a[1])[0];
+  const insight = top
+    ? `Dominant phase: ${top[0]} (${Math.round((top[1] / total) * 100)}%). Tag work types in prompts to sharpen this mix.`
+    : 'No lifecycle-tagged turns in range yet.';
   queueCharts([
     {
       kind: 'doughnut',
@@ -1543,12 +1557,15 @@ async function pageLifecycle() {
   return html`
     <div class="page">
       ${header('Lifecycle', 'How your AI turns distribute across the software lifecycle.')}
+      <div class="banner">${insight}</div>
       <section class="panel">
         <div class="chart-box"><canvas id="chart-lifecycle"></canvas></div>
         <table style="margin-top:12px">
-          <thead><tr><th>Phase</th><th>Requests</th></tr></thead>
+          <thead><tr><th>Phase</th><th>Requests</th><th>Share</th></tr></thead>
           <tbody>
-            ${entries.map(([k, v]) => html`<tr><td>${k}</td><td class="mono">${v}</td></tr>`)}
+            ${entries.map(
+              ([k, v]) => html`<tr><td>${k}</td><td class="mono">${v}</td><td class="mono">${Math.round((v / total) * 100)}%</td></tr>`,
+            )}
           </tbody>
         </table>
       </section>
@@ -1559,7 +1576,8 @@ async function pageLifecycle() {
 async function pageSnapshot() {
   const data = await query<any>('exportSummary');
   const share = data.json.share;
-  return html`
+  let copied = '';
+  const view = () => html`
     <div class="page">
       ${header('Share', 'Export a shareable card and markdown/JSON summary.')}
       <section class="panel">
@@ -1577,13 +1595,23 @@ async function pageSnapshot() {
           onClick=${async () => {
             await rpc('copyMarkdown', {});
             if (typeof navigator !== 'undefined' && navigator.clipboard && data.markdown) {
-              try { await navigator.clipboard.writeText(data.markdown); } catch { /* vscode path handles it */ }
+              try {
+                await navigator.clipboard.writeText(data.markdown);
+                copied = 'Copied to clipboard.';
+              } catch {
+                copied = 'Copy requested (host clipboard may handle it).';
+              }
+            } else {
+              copied = 'Copy requested.';
             }
+            paint(view());
           }}
         >Copy markdown</button>
+        ${copied ? html`<p class="muted" style="margin-top:.75rem">${copied}</p>` : null}
       </section>
     </div>
   `;
+  return view();
 }
 
 function paint(body?: ReturnType<typeof html>) {

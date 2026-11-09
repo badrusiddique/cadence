@@ -493,6 +493,16 @@ tr.clickable:hover td { background: var(--surface-hover); }
   border-radius: var(--radius);
   padding: 10px 12px;
   background: var(--surface-overlay);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
+}
+.list article .muted,
+.list article .codeblock,
+.list article pre {
+  flex: 1 1 100%;
 }
 .muted { color: var(--text-muted); }
 .banner {

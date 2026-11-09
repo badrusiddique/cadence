@@ -37,7 +37,7 @@ npx vsce login badrusiddique
 npx vsce publish
 
 # or publish an existing artifact
-npx vsce publish --packagePath cadence-insights-0.1.0.vsix
+npx vsce publish --packagePath cadence-insights-1.0.0.vsix
 ```
 
 Bump `version` in `package.json` (semver) before each release. Tag `vX.Y.Z` on the git remote and attach the `.vsix`.
@@ -45,7 +45,7 @@ Bump `version` in `package.json` (semver) before each release. Tag `vX.Y.Z` on t
 ### Open VSX (optional, helps Cursor / open editors)
 
 ```bash
-npx ovsx publish cadence-insights-0.1.0.vsix -p "$OVSX_PAT"
+npx ovsx publish cadence-insights-1.0.0.vsix -p "$OVSX_PAT"
 ```
 
 ## Install without publishing

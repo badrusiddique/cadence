@@ -1,25 +1,21 @@
 # Changelog
 
+## 1.0.0 — 2026-11-09
+
+First stable release.
+
+- New marketplace icon (Cadence **C + pulse**) and matching activity-bar mark.
+- E2E UI pass across all 19 pages (0 JS errors); UX fixes from PM/user review:
+  - Achievements badge layout no longer jams “earned/locked”
+  - Moments show timestamps
+  - Share Copy gives visible feedback
+  - Lifecycle shows dominant-phase insight + share %
+  - Theme toggle `aria-label`
+- Security: Function-free Signal Lab predicates; Save draft vs Approve & load.
+- Adoption docs: README, Getting Started, Marketplace, Security.
+- Measure depth: Chart.js modes, Patterns tabs, Curiosity/Context charts, range chips, day Timeline.
+
 ## 0.1.0 — 2026-10-22
 
-- Security: Signal Lab uses a Function-free predicate AST; Rule Studio splits **Save draft** vs **Approve & load**.
-- Docs: adoption-focused README + `docs/GETTING_STARTED.md`; clearer MARKETPLACE / SECURITY.
-- Senior-review hardening: date range chips (7d–All), day-grouped Timeline, Signal Lab predicate reference + adapt docs; fresh dual QA matrix in `docs/qa-matrix-v2.json`.
-- Superiority pass vs AEC: Chart.js on Dashboard/Output/Patterns/Curiosity/Context/Flow/Burndown/Hub/Lifecycle; Output 8 modes; Patterns Calendar/Projects; Anti-Patterns Rules coverage; Skill Finder community catalog; Current/All + workspace search; practice WoW + vibe; LM tools for patterns/insights/wellbeing/sessions/context/curiosity.
-- Initial public release of **Cadence**.
-- Local ingest for VS Code/Copilot, Cursor, Copilot CLI, Claude Code, Codex, OpenCode.
-- Dashboard IA aligned to Observe / Measure / Improve / Level Up (AEC surface, Cadence naming).
-- Fixed sidebar **Open Overview** / Sync (CSP + command bridge) and panel refresh after reload.
-- Flow scoring, harness comparison, session turn drill-down; chunk-lens light/dark theme; new lens icon.
-- 45 built-in habit signals with practice scoring.
-- Budget estimates enabled with non-billing disclaimer.
-- Chat participant `@cadence` and language-model tools.
-- Fixture demo mode + `npm run preview` browser dashboard.
-- Marketplace packaging docs for VS Marketplace / Open VSX.
-- CLI (`cadence doctor|overview|habits|export|mcp`) and stdio MCP server.
-- Evidence provenance tags (observed / derived / inferred) and agent skill.
-- Reverse-engineering notes from REA analysis of AI Engineer Coach.
-- Rule Studio (live-test + save), Signal Lab predicates, local signal trust gate.
-- Practice quizzes, Skill Match drafts, Hub issue/PR relative spend.
-- Ingest session cache under `~/.cadence/cache`.
-- Goal checklist in `docs/GOAL.md`.
+- Initial public preview of Cadence (Observe / Measure / Improve / Level Up).
+- Multi-harness ingest, 45 signals, CLI/MCP, demo fixtures, VSIX packaging.

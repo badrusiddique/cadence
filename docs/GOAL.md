@@ -35,6 +35,9 @@ Cadence is intentionally original (~6â€“8k LOC). Capability surface tracks AECâ€
 | Lab without Function/eval | Done | `src/analyze/predicate.ts` |
 | Save vs Approve trust split | Done | Rule Studio + `approvePersonalSignal` |
 | Adoption-ready docs | Done | README + `docs/GETTING_STARTED.md` |
+| E2E UI 1.0 pass | Done | `docs/E2E-1.0.md` |
+| Marketplace icon | Done | `assets/icon-256.png` (C + pulse) |
+| Stable version | Done | `1.0.0` |
 | Session detail drill-down | Done | `getSessionDetail` |
 | Harness comparison | Done | `getHarnessComparison` |
 | Flow scoring | Done | `src/analyze/flow.ts` |
