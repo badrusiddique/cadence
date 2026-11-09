@@ -24,6 +24,7 @@ import {
   previousWeekFilter,
   withWow,
 } from './deep';
+import { buildSafePredicate } from './predicate';
 
 export class Analyzer {
   constructor(
@@ -697,29 +698,5 @@ export class Analyzer {
       mk('mega-sessions', 'Mega Sessions', 'session-hygiene', 'medium', mega.length, `${mega.length} sessions exceed 30 turns.`, 'Split work into focused sessions with a clear outcome.', mega.slice(0, 3).map((s) => s.sessionId)),
     ];
   }
-}
-
-/** Tiny sandbox for Signal Lab — identifiers become row lookups; no free JS. */
-function buildSafePredicate(expression: string): (row: Record<string, unknown>) => boolean {
-  const expr = expression.trim();
-  if (!expr) return () => false;
-  if (/[^a-zA-Z0-9_\s.<>=!&|()'"]/.test(expr)) {
-    throw new Error('Expression contains unsupported characters.');
-  }
-  return (row) => {
-    const replaced = expr
-      .replace(/\bAND\b/gi, '&&')
-      .replace(/\bOR\b/gi, '||')
-      .replace(/\b([a-zA-Z_][a-zA-Z0-9_]*)\b/g, (id) => {
-        if (['true', 'false', 'null'].includes(id)) return id;
-        if (/^\d/.test(id)) return id;
-        const v = row[id];
-        if (typeof v === 'string') return JSON.stringify(v);
-        if (typeof v === 'number' || typeof v === 'boolean') return String(v);
-        if (v == null) return 'null';
-        return JSON.stringify(v);
-      });
-    return Boolean(Function(`"use strict"; return (${replaced});`)());
-  };
 }
 

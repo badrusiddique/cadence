@@ -15,8 +15,10 @@ Thanks for helping the community steady their AI coding practice.
 ```bash
 npm ci
 npm run check
-npm run preview
+npm run preview   # http://127.0.0.1:43127
 ```
+
+New here? Start with [docs/GETTING_STARTED.md](docs/GETTING_STARTED.md).
 
 ## Pull requests
 

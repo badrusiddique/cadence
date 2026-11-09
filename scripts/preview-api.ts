@@ -101,7 +101,19 @@ export function handleRpc(method: string, params: Record<string, unknown> = {}):
         }),
       };
     case 'savePersonalSignal':
-      return { filePath: '~/.cadence/signals/preview-skip.signal.md', id: 'preview-skip', preview: true };
+      return {
+        filePath: '~/.cadence/signals/preview-skip.signal.md',
+        id: 'preview-skip',
+        preview: true,
+        approved: false,
+      };
+    case 'approvePersonalSignal':
+      return {
+        filePath: String(params.filePath || '~/.cadence/signals/preview-skip.signal.md'),
+        id: 'preview-skip',
+        preview: true,
+        approved: true,
+      };
     case 'testSignalMarkdown': {
       const parsed = parseSignalMarkdown(String(params.markdown || ''));
       if (!parsed) throw new Error('Could not parse SignalSpec markdown.');

@@ -135,196 +135,329 @@
     "languageModelTools": [
       {
         "name": "cadence_summary",
-        "tags": ["cadence"],
+        "tags": [
+          "cadence"
+        ],
         "displayName": "Cadence: Usage Summary",
         "modelDescription": "High-level summary of AI coding assistant usage: sessions, recommendations, top habits.",
         "inputSchema": {
           "type": "object",
           "properties": {
-            "fromDate": { "type": "string", "description": "ISO date YYYY-MM-DD" },
-            "toDate": { "type": "string", "description": "ISO date YYYY-MM-DD" },
-            "workspaceId": { "type": "string" },
-            "harness": { "type": "string" }
+            "fromDate": {
+              "type": "string",
+              "description": "ISO date YYYY-MM-DD"
+            },
+            "toDate": {
+              "type": "string",
+              "description": "ISO date YYYY-MM-DD"
+            },
+            "workspaceId": {
+              "type": "string"
+            },
+            "harness": {
+              "type": "string"
+            }
           }
         }
       },
       {
         "name": "cadence_activity",
-        "tags": ["cadence"],
+        "tags": [
+          "cadence"
+        ],
         "displayName": "Cadence: Daily Activity",
         "modelDescription": "Daily activity: requests, LOC, sessions, harness breakdown.",
         "inputSchema": {
           "type": "object",
           "properties": {
-            "fromDate": { "type": "string" },
-            "toDate": { "type": "string" },
-            "workspaceId": { "type": "string" },
-            "harness": { "type": "string" }
+            "fromDate": {
+              "type": "string"
+            },
+            "toDate": {
+              "type": "string"
+            },
+            "workspaceId": {
+              "type": "string"
+            },
+            "harness": {
+              "type": "string"
+            }
           }
         }
       },
       {
         "name": "cadence_budget",
-        "tags": ["cadence"],
+        "tags": [
+          "cadence"
+        ],
         "displayName": "Cadence: Budget Estimates",
         "modelDescription": "Local AI credit/token estimates with model breakdown. Not billing data.",
         "inputSchema": {
           "type": "object",
           "properties": {
-            "fromDate": { "type": "string" },
-            "toDate": { "type": "string" },
-            "workspaceId": { "type": "string" },
-            "harness": { "type": "string" }
+            "fromDate": {
+              "type": "string"
+            },
+            "toDate": {
+              "type": "string"
+            },
+            "workspaceId": {
+              "type": "string"
+            },
+            "harness": {
+              "type": "string"
+            }
           }
         }
       },
       {
         "name": "cadence_throughput",
-        "tags": ["cadence"],
+        "tags": [
+          "cadence"
+        ],
         "displayName": "Cadence: Throughput",
         "modelDescription": "AI vs user LOC, language and workspace distribution.",
         "inputSchema": {
           "type": "object",
           "properties": {
-            "fromDate": { "type": "string" },
-            "toDate": { "type": "string" },
-            "workspaceId": { "type": "string" },
-            "harness": { "type": "string" }
+            "fromDate": {
+              "type": "string"
+            },
+            "toDate": {
+              "type": "string"
+            },
+            "workspaceId": {
+              "type": "string"
+            },
+            "harness": {
+              "type": "string"
+            }
           }
         }
       },
       {
         "name": "cadence_flow",
-        "tags": ["cadence"],
+        "tags": [
+          "cadence"
+        ],
         "displayName": "Cadence: Flow",
         "modelDescription": "Flow scores, best hours, follow-up latency, continuity.",
         "inputSchema": {
           "type": "object",
           "properties": {
-            "fromDate": { "type": "string" },
-            "toDate": { "type": "string" },
-            "workspaceId": { "type": "string" },
-            "harness": { "type": "string" }
+            "fromDate": {
+              "type": "string"
+            },
+            "toDate": {
+              "type": "string"
+            },
+            "workspaceId": {
+              "type": "string"
+            },
+            "harness": {
+              "type": "string"
+            }
           }
         }
       },
       {
         "name": "cadence_habits",
-        "tags": ["cadence"],
+        "tags": [
+          "cadence"
+        ],
         "displayName": "Cadence: Habits",
         "modelDescription": "Detected habit findings with severity and recommendations.",
         "inputSchema": {
           "type": "object",
           "properties": {
-            "fromDate": { "type": "string" },
-            "toDate": { "type": "string" },
-            "workspaceId": { "type": "string" },
-            "harness": { "type": "string" }
+            "fromDate": {
+              "type": "string"
+            },
+            "toDate": {
+              "type": "string"
+            },
+            "workspaceId": {
+              "type": "string"
+            },
+            "harness": {
+              "type": "string"
+            }
           }
         }
       },
       {
         "name": "cadence_compare",
-        "tags": ["cadence"],
+        "tags": [
+          "cadence"
+        ],
         "displayName": "Cadence: Harness Compare",
         "modelDescription": "Side-by-side harness comparison: sessions, requests, LOC, cancel rates.",
         "inputSchema": {
           "type": "object",
           "properties": {
-            "fromDate": { "type": "string" },
-            "toDate": { "type": "string" },
-            "workspaceId": { "type": "string" }
+            "fromDate": {
+              "type": "string"
+            },
+            "toDate": {
+              "type": "string"
+            },
+            "workspaceId": {
+              "type": "string"
+            }
           }
         }
       },
       {
         "name": "cadence_patterns",
-        "tags": ["cadence"],
+        "tags": [
+          "cadence"
+        ],
         "displayName": "Cadence: Work Patterns",
         "modelDescription": "Work-hours heatmap, late-night/weekend balance, calendar intensity, and project mix.",
         "inputSchema": {
           "type": "object",
           "properties": {
-            "fromDate": { "type": "string" },
-            "toDate": { "type": "string" },
-            "workspaceId": { "type": "string" },
-            "harness": { "type": "string" }
+            "fromDate": {
+              "type": "string"
+            },
+            "toDate": {
+              "type": "string"
+            },
+            "workspaceId": {
+              "type": "string"
+            },
+            "harness": {
+              "type": "string"
+            }
           }
         }
       },
       {
         "name": "cadence_insights",
-        "tags": ["cadence"],
+        "tags": [
+          "cadence"
+        ],
         "displayName": "Cadence: Insights Bundle",
         "modelDescription": "Combined wellbeing, curiosity, context, and flow insights for coaching agents.",
         "inputSchema": {
           "type": "object",
           "properties": {
-            "fromDate": { "type": "string" },
-            "toDate": { "type": "string" },
-            "workspaceId": { "type": "string" },
-            "harness": { "type": "string" }
+            "fromDate": {
+              "type": "string"
+            },
+            "toDate": {
+              "type": "string"
+            },
+            "workspaceId": {
+              "type": "string"
+            },
+            "harness": {
+              "type": "string"
+            }
           }
         }
       },
       {
         "name": "cadence_wellbeing",
-        "tags": ["cadence"],
+        "tags": [
+          "cadence"
+        ],
         "displayName": "Cadence: Wellbeing",
         "modelDescription": "Late-night load, weekend ratio, flow score, and balance signals.",
         "inputSchema": {
           "type": "object",
           "properties": {
-            "fromDate": { "type": "string" },
-            "toDate": { "type": "string" },
-            "workspaceId": { "type": "string" },
-            "harness": { "type": "string" }
+            "fromDate": {
+              "type": "string"
+            },
+            "toDate": {
+              "type": "string"
+            },
+            "workspaceId": {
+              "type": "string"
+            },
+            "harness": {
+              "type": "string"
+            }
           }
         }
       },
       {
         "name": "cadence_sessions",
-        "tags": ["cadence"],
+        "tags": [
+          "cadence"
+        ],
         "displayName": "Cadence: Sessions",
         "modelDescription": "Timeline of sessions, or a single session detail when sessionId is provided.",
         "inputSchema": {
           "type": "object",
           "properties": {
-            "sessionId": { "type": "string", "description": "Optional session id for detail view" },
-            "fromDate": { "type": "string" },
-            "toDate": { "type": "string" },
-            "workspaceId": { "type": "string" },
-            "harness": { "type": "string" }
+            "sessionId": {
+              "type": "string",
+              "description": "Optional session id for detail view"
+            },
+            "fromDate": {
+              "type": "string"
+            },
+            "toDate": {
+              "type": "string"
+            },
+            "workspaceId": {
+              "type": "string"
+            },
+            "harness": {
+              "type": "string"
+            }
           }
         }
       },
       {
         "name": "cadence_context",
-        "tags": ["cadence"],
+        "tags": [
+          "cadence"
+        ],
         "displayName": "Cadence: Context Health",
         "modelDescription": "Context quality and management checks: files, instructions, skills, compaction, long prompts.",
         "inputSchema": {
           "type": "object",
           "properties": {
-            "fromDate": { "type": "string" },
-            "toDate": { "type": "string" },
-            "workspaceId": { "type": "string" },
-            "harness": { "type": "string" }
+            "fromDate": {
+              "type": "string"
+            },
+            "toDate": {
+              "type": "string"
+            },
+            "workspaceId": {
+              "type": "string"
+            },
+            "harness": {
+              "type": "string"
+            }
           }
         }
       },
       {
         "name": "cadence_curiosity",
-        "tags": ["cadence"],
+        "tags": [
+          "cadence"
+        ],
         "displayName": "Cadence: Curiosity",
         "modelDescription": "Inquiry vs action balance, research channels, and question samples.",
         "inputSchema": {
           "type": "object",
           "properties": {
-            "fromDate": { "type": "string" },
-            "toDate": { "type": "string" },
-            "workspaceId": { "type": "string" },
-            "harness": { "type": "string" }
+            "fromDate": {
+              "type": "string"
+            },
+            "toDate": {
+              "type": "string"
+            },
+            "workspaceId": {
+              "type": "string"
+            },
+            "harness": {
+              "type": "string"
+            }
           }
         }
       }
@@ -339,7 +472,13 @@
         },
         "cadence.budgetSku": {
           "type": "string",
-          "enum": ["pro", "pro-plus", "business", "enterprise", "custom"],
+          "enum": [
+            "pro",
+            "pro-plus",
+            "business",
+            "enterprise",
+            "custom"
+          ],
           "default": "pro",
           "description": "Assumed AI credit SKU for Budget estimates. Estimates only — not billing."
         },
@@ -371,8 +510,7 @@
   "dependencies": {
     "chart.js": "^4.4.8",
     "htm": "^3.1.1",
-    "preact": "^10.26.4",
-    "zod": "^3.24.2"
+    "preact": "^10.26.4"
   },
   "devDependencies": {
     "@types/node": "^22.13.10",

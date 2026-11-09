@@ -109,15 +109,30 @@ export async function handleRpc(
       const parsed = parseSignalMarkdown(markdown);
       if (!parsed) throw new Error('Could not parse SignalSpec markdown.');
       const filePath = writePersonalSignal(parsed.id, markdown);
-      if (ctx.trustStore) await approve(ctx.trustStore, filePath, markdown);
-      // hot-reload signals into analyzer
+      // Save does not auto-approve — caller must approvePersonalSignal explicitly.
       const signals = loadAllSignals({
         store: ctx.trustStore,
         workspaceRoot: ctx.workspaceRoot,
         trustedWorkspace: true,
       });
       a.setSignals(signals);
-      return { filePath, id: parsed.id };
+      return { filePath, id: parsed.id, approved: false };
+    }
+    case 'approvePersonalSignal': {
+      const markdown = String(params.markdown || '');
+      const filePath = typeof params.filePath === 'string' ? params.filePath : '';
+      const parsed = parseSignalMarkdown(markdown);
+      if (!parsed) throw new Error('Could not parse SignalSpec markdown.');
+      if (!filePath) throw new Error('filePath is required to approve a signal.');
+      if (!ctx.trustStore) throw new Error('Trust store unavailable in this host.');
+      await approve(ctx.trustStore, filePath, markdown);
+      const signals = loadAllSignals({
+        store: ctx.trustStore,
+        workspaceRoot: ctx.workspaceRoot,
+        trustedWorkspace: true,
+      });
+      a.setSignals(signals);
+      return { filePath, id: parsed.id, approved: true };
     }
     case 'testSignalMarkdown': {
       const markdown = String(params.markdown || '');

@@ -69,8 +69,10 @@ Lab is a **safe exploration subset**. Persist durable coaching rules as SignalSp
 
 1. Find a pattern in Dashboard / Anti-Patterns / Data Explorer.  
 2. Probe it in Signal Lab.  
-3. Author SignalSpec in Rule Studio → Live test → Save to `~/.cadence/signals/`.  
-4. Add a Vitest fixture case when the rule is shared in-repo.
+3. Author SignalSpec in Rule Studio → Live test → **Save draft** → **Approve & load**.  
+4. Add a Vitest fixture case when the rule is shared in-repo.  
+
+Saving alone does **not** trust a signal. Approval writes the content hash into the local trust store.
 
 ## Tests
 

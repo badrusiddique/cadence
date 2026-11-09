@@ -1,13 +1,28 @@
 # Security
 
-Cadence reads local AI session logs and evaluates optional user-authored SignalSpec files.
+Cadence reads local AI session logs and evaluates optional user-authored SignalSpec files. It does not phone home.
 
 ## Reporting
 
-Email security concerns to the repository owner via GitHub Security Advisories on `badrusiddique/cadence`.
+Use GitHub Security Advisories on the Cadence repository, or contact the maintainer listed in `package.json`.
 
 ## Trust model
 
-- Built-in signals ship with the extension.
-- Personal/project signals under `~/.cadence` / `.cadence` should be reviewed before enabling in shared machines.
-- Cadence refuses to read paths outside known harness roots.
+| Layer | Behavior |
+|---|---|
+| Built-in signals | Shipped with the extension |
+| Personal signals (`~/.cadence/signals`) | Written as drafts; **must be Approved** before load |
+| Project signals (`.cadence/signals`) | Require VS Code workspace trust + approval |
+| Signal Lab | Sandboxed predicate AST — **no `eval` / `Function`** |
+| Ingest | Read-only; refuses paths outside known harness roots |
+
+## Hardening notes (v0.1)
+
+- Rule Studio **Save draft** and **Approve & load** are separate steps.  
+- Lab expressions only allow identifiers, literals, comparisons, `AND` / `OR`, and parentheses.  
+- Session log contents are sensitive — treat `~/.cadence` like other local AI caches.  
+- Do not paste untrusted SignalSpec from the internet without review.
+
+## Out of scope
+
+Cadence is not a sandbox for arbitrary code execution, a secrets manager, or a multi-tenant service. Run it like any other local developer tool with access to your home directory logs.

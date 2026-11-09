@@ -32,6 +32,9 @@ Cadence is intentionally original (~6â€“8k LOC). Capability surface tracks AECâ€
 | Day-grouped Timeline | Done | `getTimelineByDay` + By day / List |
 | Lab predicate reference | Done | `getLabReference` + SIGNALS.md adapt loop |
 | Honest dual-walk matrix v2 | Done | `docs/qa-matrix-v2.json` |
+| Lab without Function/eval | Done | `src/analyze/predicate.ts` |
+| Save vs Approve trust split | Done | Rule Studio + `approvePersonalSignal` |
+| Adoption-ready docs | Done | README + `docs/GETTING_STARTED.md` |
 | Session detail drill-down | Done | `getSessionDetail` |
 | Harness comparison | Done | `getHarnessComparison` |
 | Flow scoring | Done | `src/analyze/flow.ts` |

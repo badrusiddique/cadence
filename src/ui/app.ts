@@ -1100,11 +1100,12 @@ async function pageStudio() {
   let draft = template.markdown;
   let status = '';
   let finding: any = null;
+  let lastSavedPath = '' as string;
 
   const view = () => html`
     <div class="page">
       ${header('Rule Studio', 'Author, live-test, and save personal SignalSpec files. Durable rules live under ~/.cadence.', `${catalog.length} signals`)}
-      <div class="banner ok">Adapt path: explore in Signal Lab → paste a SignalSpec here → Live test → Save (local trust gate). Full authoring guide in docs/SIGNALS.md.</div>
+      <div class="banner ok">Adapt path: Signal Lab → Live test here → Save draft → Approve (trust gate). See docs/SIGNALS.md.</div>
       <div class="grid-2">
         <section class="panel">
           <h2>Catalog</h2>
@@ -1153,11 +1154,12 @@ async function pageStudio() {
               }}
             >Live test</button>
             <button
-              class="btn"
+              class="btn secondary"
               onClick=${async () => {
                 try {
                   const res = await rpc<any>('savePersonalSignal', { markdown: draft });
-                  status = `Saved & approved ${res.filePath}`;
+                  lastSavedPath = res.filePath || '';
+                  status = `Saved draft (not trusted yet): ${res.filePath}`;
                   state.cache.clear();
                   paint(view());
                 } catch (err) {
@@ -1165,7 +1167,28 @@ async function pageStudio() {
                   paint(view());
                 }
               }}
-            >Save to ~/.cadence</button>
+            >Save draft</button>
+            <button
+              class="btn"
+              onClick=${async () => {
+                try {
+                  if (!lastSavedPath) {
+                    const saved = await rpc<any>('savePersonalSignal', { markdown: draft });
+                    lastSavedPath = saved.filePath || '';
+                  }
+                  const res = await rpc<any>('approvePersonalSignal', {
+                    markdown: draft,
+                    filePath: lastSavedPath,
+                  });
+                  status = `Approved & loaded: ${res.filePath}`;
+                  state.cache.clear();
+                  paint(view());
+                } catch (err) {
+                  status = err instanceof Error ? err.message : String(err);
+                  paint(view());
+                }
+              }}
+            >Approve & load</button>
           </div>
           ${status ? html`<p class="muted" style="margin-top:.75rem">${status}</p>` : null}
           ${finding ? html`<pre class="codeblock">${JSON.stringify(finding, null, 2)}</pre>` : null}

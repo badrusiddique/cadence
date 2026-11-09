@@ -2,42 +2,23 @@
 
 **Steady your AI coding practice.**
 
-Cadence is a local-first VS Code extension that reads your AI coding session logs and turns them into a calm, actionable dashboard — Observe, Measure, Improve, Level Up. Nothing leaves your machine.
+Local-first insights for Copilot, Claude Code, Codex, Cursor, and OpenCode — right inside VS Code / Cursor.  
+Cadence reads the session logs you already have, surfaces habits worth fixing, and never phones home.
 
 <p align="center">
   <img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-0D8F6F">
   <img alt="VS Code 1.125+" src="https://img.shields.io/badge/VS%20Code-1.125%2B-142033">
-  <img alt="Marketplace ready" src="https://img.shields.io/badge/Marketplace-ready-0D8F6F">
+  <img alt="Local only" src="https://img.shields.io/badge/privacy-local%20only-0D8F6F">
 </p>
 
-## Why Cadence
+```text
+  Observe  →  Measure  →  Improve  →  Level Up
+  sessions    charts      signals     practice
+```
 
-If you use Copilot, Claude Code, Codex, Cursor, OpenCode, or similar harnesses, your best coaching data is already on disk. Cadence makes it visible — **locally**, without a cloud coaching dependency:
+## Get started in 2 minutes
 
-- **Observe** — dashboard, day-grouped timeline + turn drill-down, coding moments  
-- **Measure** — multi-mode output charts, burndown estimates, patterns, curiosity, flow, hub  
-- **Improve** — 45 habit signals, rule studio, signal lab (with predicate reference), skill finder, context health  
-- **Level Up** — practice focus, achievements, lifecycle mix, shareable snapshot  
-- **Adapt** — Lab → SignalSpec Studio → local trust gate → CLI/MCP for agents  
-
-Cadence is an original project. It explores the same problem space as Microsoft’s MIT-licensed [AI Engineer Coach](https://github.com/microsoft/ai-engineering-coach) but ships its own product identity, architecture, UI, and packaging. See [NOTICE](NOTICE). Honest comparison notes: [docs/QA-AEC-VS-CADENCE.md](docs/QA-AEC-VS-CADENCE.md).
-
-## Gaps closed vs common prior art
-
-| Gap | Cadence |
-|---|---|
-| Not marketplace-published | Packaging + [publish guide](docs/MARKETPLACE.md) for VS Marketplace / Open VSX |
-| Token/burndown hidden | **Budget** enabled with explicit “estimate, not billing” labeling |
-| No Cursor transcripts | Dedicated **Cursor** harness |
-| Hard to try without logs | Demo fixtures + `npm run preview` browser dashboard |
-| Agent-only workflows | **CLI + stdio MCP** + doctor + agent skill (REA-grade dual surface) |
-| Contributor onboarding | Architecture notes, SignalSpec docs, AGENTS.md |
-
-Cadence was reverse-engineered against [AI Engineer Coach](https://github.com/microsoft/ai-engineering-coach) and hardened with methodology from [REA](https://github.com/morluto/rea) (evidence tags, doctor, MCP/CLI). Details: [docs/REA-REVERSE-ENGINEERING.md](docs/REA-REVERSE-ENGINEERING.md).
-
-## Install
-
-### From a VSIX (recommended until Marketplace listing is live)
+### Option A — Install a VSIX (fastest)
 
 ```bash
 git clone https://github.com/badrusiddique/cadence.git
@@ -45,54 +26,85 @@ cd cadence
 npm ci
 npm run package
 code --install-extension cadence-insights-*.vsix
+# or: cursor --install-extension cadence-insights-*.vsix
 ```
 
-Then: **Command Palette → “Cadence: Open Overview”**.
+1. Open VS Code / Cursor  
+2. **Command Palette → `Cadence: Open Overview`**  
+3. If you have no local logs yet, enable **Settings → `cadence.demoMode`**
 
-### Demo mode
-
-Settings → `cadence.demoMode` → enable, or rely on automatic fixture fallback when no logs are found.
-
-## Preview without VS Code
+### Option B — Preview the UI in a browser (no extension install)
 
 ```bash
 npm ci
 npm run preview
 ```
 
-Open [http://127.0.0.1:43127](http://127.0.0.1:43127) for the fixture-backed dashboard.
+Open [http://127.0.0.1:43127](http://127.0.0.1:43127) — fixture data, full dashboard.
 
-## CLI and MCP
+More detail: **[docs/GETTING_STARTED.md](docs/GETTING_STARTED.md)**
+
+---
+
+## What you get
+
+| Pillar | What it does |
+|---|---|
+| **Observe** | Dashboard, day-grouped timeline, coding moments |
+| **Measure** | Output (8 chart modes), burndown estimates, patterns, curiosity, flow, hub |
+| **Improve** | 45 habit signals, Rule Studio, Signal Lab, skill finder, context health |
+| **Level Up** | Practice drills, achievements, lifecycle mix, shareable snapshot |
+| **Agents** | CLI + stdio MCP + `@cadence` chat + LM tools |
+
+**Why people adopt it**
+
+- Works offline — no cloud coaching account  
+- Burndown is **on** (clearly labeled as estimates, not billing)  
+- Cursor + Claude + Codex + Copilot + OpenCode in one view  
+- Adapt loop you can trust: Lab → Save draft → **Approve** → load  
+
+## Quick workflows
+
+**Human**
+
+1. Open Overview  
+2. Filter: Current / All · date range · harness  
+3. Check Anti-Patterns → open Rule Studio if you want a custom signal  
+4. Export Snapshot when you want a shareable weekly card  
+
+**Agent / automation**
 
 ```bash
 npm run cli -- doctor --json
 npm run cli -- overview --demo --json
 npm run cli -- habits --demo --json
-npm run mcp                  # stdio MCP for Cursor / Claude / Codex
-npm run setup:mcp            # dry-run MCP registration plan
-npm run setup:mcp -- --yes   # write after you approve
+npm run mcp                  # stdio MCP
+npm run setup:mcp            # dry-run registration
 ```
 
-Agent skill: [`.agents/skills/cadence-insights/SKILL.md`](.agents/skills/cadence-insights/SKILL.md).
+Chat in-editor: `@cadence /summary` · `/habits` · `/compare` · `/flow`
+
+---
 
 ## Supported harnesses
 
-| Harness | Typical location |
+| Harness | Typical path |
 |---|---|
 | VS Code / Copilot chat | `.../User/workspaceStorage/*/chatSessions` |
-| Cursor (storage + transcripts) | Cursor `workspaceStorage` + `~/.cursor/projects/**` |
-| GitHub Copilot CLI / App | `~/.copilot/session-state` |
+| Cursor | `workspaceStorage` + `~/.cursor/projects/**` |
+| Copilot CLI | `~/.copilot/session-state` |
 | Claude Code | `~/.claude/projects/**/*.jsonl` |
 | Codex CLI | `~/.codex/sessions/**/*.jsonl` |
-| OpenCode | `~/.local/share/opencode` (JSON sidecars) |
+| OpenCode | `~/.local/share/opencode` |
 
-All reads are **read-only**. Cadence never modifies session files and does not phone home.
+All reads are **read-only**. Cadence never mutates session files.
 
-## Privacy
+## Privacy & trust
 
-- Local analysis only  
-- No proprietary telemetry  
-- Optional language-model features (chat / tools) run only when you invoke them through VS Code  
+- Local analysis only — no proprietary telemetry  
+- Personal signals under `~/.cadence/signals` require **explicit Approve** before they load  
+- Lab predicates use a sandboxed expression parser (no `eval` / `Function`)  
+- Details: [SECURITY.md](SECURITY.md) · [docs/SIGNALS.md](docs/SIGNALS.md)
 
 ## Develop
 
@@ -100,21 +112,29 @@ All reads are **read-only**. Cadence never modifies session files and does not p
 npm ci
 npm run check      # typecheck + lint + test
 npm run build
-npm run preview    # UI against fixtures
+npm run preview
+npm run package    # cadence-insights-0.1.0.vsix
 ```
 
 | Path | Role |
 |---|---|
 | `src/ingest/` | Discover + parse harness logs |
-| `src/analyze/` | Analytics facade used by UI + LM tools |
+| `src/analyze/` | Analytics used by UI + LM tools |
 | `src/signals/` | Habit SignalSpec engine + catalog |
 | `src/ui/` | Preact dashboard |
 | `src/host/` | VS Code panel, chat, tools |
-| `src/cli/` | Doctor + overview/habits/export |
-| `src/mcp/` | Stdio MCP server |
-| `docs/` | Signals, marketplace, architecture, REA notes |
+| `src/cli/` · `src/mcp/` | Doctor, overview, MCP server |
 
-See [docs/SIGNALS.md](docs/SIGNALS.md) to author habits, and [docs/MARKETPLACE.md](docs/MARKETPLACE.md) to publish.
+## Docs
+
+| Doc | Purpose |
+|---|---|
+| [Getting started](docs/GETTING_STARTED.md) | Install, first session, demo mode |
+| [Signals](docs/SIGNALS.md) | Author + adapt habit rules |
+| [Marketplace](docs/MARKETPLACE.md) | Publish to VS Marketplace / Open VSX |
+| [Architecture](docs/ARCHITECTURE.md) | How the pieces fit |
+| [QA vs AEC](docs/QA-AEC-VS-CADENCE.md) | Honest comparison notes |
+| [NOTICE](NOTICE) | Prior art disclosure |
 
 ## Commands
 
@@ -122,8 +142,9 @@ See [docs/SIGNALS.md](docs/SIGNALS.md) to author habits, and [docs/MARKETPLACE.m
 - `Cadence: Reload Sessions`  
 - `Cadence: Export Snapshot`  
 - `Cadence: Review Local Signals`  
-- Chat: `@cadence /summary|habits|compare|flow`  
 
 ## License
 
-[MIT](LICENSE) © Badru Siddique
+[MIT](LICENSE) © Badru Siddique  
+
+Original product in the same problem space as Microsoft’s MIT-licensed [AI Engineering Coach](https://github.com/microsoft/ai-engineering-coach) — see [NOTICE](NOTICE). Not a fork.

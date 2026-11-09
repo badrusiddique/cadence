@@ -30,9 +30,9 @@
   {
     "area": "Output",
     "aec": "Range chips + 8 modes Chart.js",
-    "cadence": "8 modes Chart.js, no date-range chips",
+    "cadence": "8 modes Chart.js + rail date-range chips",
     "winner": "tie",
-    "notes": "Parity on modes; AEC still wins range chips"
+    "notes": "Parity on modes and range filters"
   },
   {
     "area": "Burndown",
