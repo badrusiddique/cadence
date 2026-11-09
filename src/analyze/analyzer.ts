@@ -618,12 +618,26 @@ export class Analyzer {
     };
   }
 
-  exportSummary(filter: DateFilter = {}) {
+  exportSummary(filter: DateFilter = {}, opts?: { redactSensitive?: boolean }) {
     const overview = this.getOverview(filter);
     const habits = this.getHabits(filter).filter((h) => h.triggered);
     const share = this.getShareCard(filter);
+    const redact = Boolean(opts?.redactSensitive);
+    const habitLines = habits.slice(0, 8).map((h) => {
+      const detail = redact ? `${h.count} finding(s)` : h.message;
+      return `- **${h.name}** (${h.severity}): ${detail}`;
+    });
+    const jsonOverview = redact
+      ? {
+          ...overview,
+          recommendations: overview.recommendations.map(() => '[redacted]'),
+          skillPreview: [],
+          topPattern: overview.topPattern ? '[redacted]' : null,
+          vibe: overview.vibe ? { ...overview.vibe, reason: '[redacted]', topPattern: null } : overview.vibe,
+        }
+      : overview;
     return {
-      json: { overview, habits, share },
+      json: { overview: jsonOverview, habits: redact ? habits.map((h) => ({ ...h, message: '[redacted]', examples: [], improvement: '[redacted]' })) : habits, share },
       markdown: [
         `# Cadence Snapshot`,
         ``,
@@ -631,12 +645,15 @@ export class Analyzer {
         `- Requests: **${overview.requests}**`,
         `- AI LOC: **${overview.aiLoc}**`,
         `- Practice score: **${overview.practiceScore}**`,
+        redact ? `- Redaction: **on** (prompt excerpts omitted)` : '',
         ``,
         `## Top habits to refine`,
-        ...habits.slice(0, 8).map((h) => `- **${h.name}** (${h.severity}): ${h.message}`),
+        ...habitLines,
         ``,
         `_Generated locally by Cadence. No data left this machine._`,
-      ].join('\n'),
+      ]
+        .filter((line) => line !== '')
+        .join('\n'),
     };
   }
 

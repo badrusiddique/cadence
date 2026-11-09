@@ -9,7 +9,8 @@ Cadence reads the session logs you already have, surfaces habits worth fixing, a
   <img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-0D8F6F">
   <img alt="VS Code 1.125+" src="https://img.shields.io/badge/VS%20Code-1.125%2B-142033">
   <img alt="Local only" src="https://img.shields.io/badge/privacy-local%20only-0D8F6F">
-  <img alt="Version 1.0.0" src="https://img.shields.io/badge/version-1.0.0-0D8F6F">
+  <img alt="Version 1.1.0" src="https://img.shields.io/badge/version-1.1.0-0D8F6F">
+  <img alt="Enterprise hardened" src="https://img.shields.io/badge/enterprise-hardened-0D8F6F">
 </p>
 
 <p align="center">
@@ -30,8 +31,8 @@ git clone https://github.com/badrusiddique/cadence.git
 cd cadence
 npm ci
 npm run package
-code --install-extension cadence-insights-1.0.0.vsix
-# or: cursor --install-extension cadence-insights-1.0.0.vsix
+code --install-extension cadence-insights-1.1.0.vsix
+# or: cursor --install-extension cadence-insights-1.1.0.vsix
 ```
 
 1. Open VS Code / Cursor  
@@ -109,7 +110,8 @@ All reads are **read-only**. Cadence never mutates session files.
 - Local analysis only — no proprietary telemetry  
 - Personal signals under `~/.cadence/signals` require **explicit Approve** before they load  
 - Lab predicates use a sandboxed expression parser (no `eval` / `Function`)  
-- Details: [SECURITY.md](SECURITY.md) · [docs/SIGNALS.md](docs/SIGNALS.md)
+- Enterprise defaults: offline webview CSP, RPC allowlist, ingest caps, optional export redaction  
+- Details: [SECURITY.md](SECURITY.md) · [docs/ENTERPRISE.md](docs/ENTERPRISE.md) · [docs/SIGNALS.md](docs/SIGNALS.md)
 
 ## Develop
 
@@ -118,16 +120,16 @@ npm ci
 npm run check      # typecheck + lint + test
 npm run build
 npm run preview
-npm run package    # cadence-insights-1.0.0.vsix
+npm run package    # cadence-insights-1.1.0.vsix
 ```
 
 | Path | Role |
 |---|---|
-| `src/ingest/` | Discover + parse harness logs |
+| `src/ingest/` | Discover + parse harness logs (capped) |
 | `src/analyze/` | Analytics used by UI + LM tools |
 | `src/signals/` | Habit SignalSpec engine + catalog |
-| `src/ui/` | Preact dashboard |
-| `src/host/` | VS Code panel, chat, tools |
+| `src/ui/` | Preact dashboard (offline fonts) |
+| `src/host/` | Panel, RPC guard, chat, tools |
 | `src/cli/` · `src/mcp/` | Doctor, overview, MCP server |
 
 ## Docs
@@ -135,6 +137,7 @@ npm run package    # cadence-insights-1.0.0.vsix
 | Doc | Purpose |
 |---|---|
 | [Getting started](docs/GETTING_STARTED.md) | Install, first session, demo mode |
+| [Enterprise](docs/ENTERPRISE.md) | Org rollout, privacy controls, admin checklist |
 | [Signals](docs/SIGNALS.md) | Author + adapt habit rules |
 | [Marketplace](docs/MARKETPLACE.md) | Publish to VS Marketplace / Open VSX |
 | [Architecture](docs/ARCHITECTURE.md) | How the pieces fit |

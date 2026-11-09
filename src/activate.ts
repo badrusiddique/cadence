@@ -8,10 +8,23 @@ import { approve, getPending, type PendingSignal } from './signals/trust';
 import { registerChatParticipant } from './host/chat';
 import { registerLanguageModelTools } from './host/tools';
 import { CadencePanel } from './host/panel';
+import { createLogger, type CadenceLogger } from './host/log';
 
 let analyzer: Analyzer = new Analyzer([], new Map(), loadAllSignals({}));
 let output: vscode.OutputChannel;
+let log: CadenceLogger;
 let sidebarProvider: CadenceSidebarProvider | undefined;
+
+function readEnterpriseConfig() {
+  const cfg = vscode.workspace.getConfiguration('cadence');
+  return {
+    demoMode: cfg.get<boolean>('demoMode') ?? false,
+    redactSensitive: cfg.get<boolean>('redactSensitive') ?? false,
+    offlineUi: cfg.get<boolean>('offlineUi') ?? true,
+    maxSessions: cfg.get<number>('maxSessions') ?? 5000,
+    maxFilesPerWalk: cfg.get<number>('maxFilesPerWalk') ?? 8000,
+  };
+}
 
 function escapeHtml(value: string): string {
   return value
@@ -166,12 +179,21 @@ async function reviewPendingTrust(context: vscode.ExtensionContext): Promise<voi
 }
 
 async function reload(context: vscode.ExtensionContext, openPanel = false, bustCache = false): Promise<void> {
-  const demoMode = vscode.workspace.getConfiguration('cadence').get<boolean>('demoMode') ?? false;
-  output.appendLine(`Cadence reload (demoMode=${demoMode}, bustCache=${bustCache})…`);
+  const ent = readEnterpriseConfig();
+  log.info('reload start', {
+    demoMode: ent.demoMode,
+    bustCache,
+    redactSensitive: ent.redactSensitive,
+    offlineUi: ent.offlineUi,
+    maxSessions: ent.maxSessions,
+  });
   if (bustCache) clearIngestCache();
 
   const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
   const trustedWorkspace = vscode.workspace.isTrusted !== false;
+  if (!trustedWorkspace) {
+    log.warn('workspace untrusted — project-layer signals will not load');
+  }
 
   await vscode.window.withProgress(
     {
@@ -194,18 +216,24 @@ async function reload(context: vscode.ExtensionContext, openPanel = false, bustC
       });
 
       const result = ingestAll({
-        demoMode,
-        useCache: !bustCache && !demoMode,
+        demoMode: ent.demoMode,
+        useCache: !bustCache && !ent.demoMode,
+        limits: {
+          maxSessions: ent.maxSessions,
+          maxFilesPerWalk: ent.maxFilesPerWalk,
+        },
         onProgress: (u) => progress.report({ message: u.detail || u.phase }),
       });
       analyzer = new Analyzer(result.sessions, result.workspaces, signals);
-      for (const err of result.errors) output.appendLine(`[${err.source}] ${err.message}`);
-      output.appendLine(`Loaded ${result.sessions.length} sessions; ${signals.length} signals.`);
+      for (const err of result.errors) log.warn(err.message, { source: err.source });
+      log.info('reload complete', { sessions: result.sessions.length, signals: signals.length, sources: result.sources.length });
       sidebarProvider?.refresh();
       if (openPanel || CadencePanel.current) {
         CadencePanel.show(context.extensionUri, analyzer, {
           trustStore: context.globalState,
           workspaceRoot,
+          redactSensitive: ent.redactSensitive,
+          offlineUi: ent.offlineUi,
         });
       }
     },
@@ -214,6 +242,7 @@ async function reload(context: vscode.ExtensionContext, openPanel = false, bustC
 
 export function activate(context: vscode.ExtensionContext): void {
   output = vscode.window.createOutputChannel('Cadence');
+  log = createLogger(output);
   context.subscriptions.push(output);
 
   const getAnalyzer = () => analyzer;
@@ -229,7 +258,8 @@ export function activate(context: vscode.ExtensionContext): void {
     }),
     vscode.commands.registerCommand('cadence.exportSummary', async () => {
       await reload(context, false, false);
-      const summary = analyzer.exportSummary();
+      const ent = readEnterpriseConfig();
+      const summary = analyzer.exportSummary({}, { redactSensitive: ent.redactSensitive });
       const doc = await vscode.workspace.openTextDocument({ content: summary.markdown, language: 'markdown' });
       await vscode.window.showTextDocument(doc);
     }),
@@ -254,7 +284,7 @@ export function activate(context: vscode.ExtensionContext): void {
     }),
   );
 
-  output.appendLine('Cadence activated.');
+  log.info('Cadence activated', { version: context.extension.packageJSON?.version });
 }
 
 export function deactivate(): void {

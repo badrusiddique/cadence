@@ -8,6 +8,7 @@ import { parseOpenCodeSessions } from './harnesses/opencode';
 import { parseVsCodeSessions } from './harnesses/vscode';
 import { buildFixtureSessions } from './fixtures';
 import { readIngestCache, writeIngestCache } from './cache';
+import { resolveIngestLimits, truncateSessions, type IngestLimits } from './limits';
 
 export type ProgressFn = (update: { phase: string; detail?: string; ratio?: number }) => void;
 
@@ -30,7 +31,10 @@ export function ingestAll(options?: {
   sources?: DiscoveredSources;
   onProgress?: ProgressFn;
   useCache?: boolean;
+  limits?: Partial<IngestLimits>;
 }): IngestResult {
+  const limits = resolveIngestLimits(options?.limits);
+
   if (options?.demoMode) {
     options.onProgress?.({ phase: 'fixtures', detail: 'Loading demo fixtures', ratio: 1 });
     const sessions = buildFixtureSessions();
@@ -47,7 +51,20 @@ export function ingestAll(options?: {
     const cached = readIngestCache();
     if (cached && cached.sessions.length > 0) {
       options?.onProgress?.({ phase: 'cache', detail: 'Loaded cached sessions', ratio: 1 });
-      return cached;
+      const capped = truncateSessions(cached.sessions, limits.maxSessions);
+      if (!capped.truncated) return cached;
+      return {
+        ...cached,
+        sessions: capped.sessions,
+        workspaces: indexWorkspaces(capped.sessions),
+        errors: [
+          ...cached.errors,
+          {
+            source: 'limits',
+            message: `Cache truncated to ${limits.maxSessions} sessions (${capped.truncated} omitted). Raise cadence.maxSessions if needed.`,
+          },
+        ],
+      };
     }
   }
 
@@ -132,9 +149,17 @@ export function ingestAll(options?: {
     };
   }
 
+  const capped = truncateSessions(sessions, limits.maxSessions);
+  if (capped.truncated) {
+    errors.push({
+      source: 'limits',
+      message: `Ingest truncated to ${limits.maxSessions} sessions (${capped.truncated} omitted for host safety).`,
+    });
+  }
+
   const result: IngestResult = {
-    sessions,
-    workspaces: indexWorkspaces(sessions),
+    sessions: capped.sessions,
+    workspaces: indexWorkspaces(capped.sessions),
     editLocIndex,
     sources: [...new Set(sourcePaths)],
     errors,

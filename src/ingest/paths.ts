@@ -25,7 +25,17 @@ export function listDirs(dir: string): string[] {
   }
 }
 
-export function walkFiles(dir: string, pred: (name: string) => boolean, acc: string[] = []): string[] {
+export function walkFiles(
+  dir: string,
+  pred: (name: string) => boolean,
+  acc: string[] = [],
+  opts?: { maxFiles?: number; maxDepth?: number; depth?: number },
+): string[] {
+  const maxFiles = opts?.maxFiles ?? 8_000;
+  const maxDepth = opts?.maxDepth ?? 12;
+  const depth = opts?.depth ?? 0;
+  if (acc.length >= maxFiles || depth > maxDepth) return acc;
+
   let entries: fs.Dirent[];
   try {
     entries = fs.readdirSync(dir, { withFileTypes: true });
@@ -33,9 +43,13 @@ export function walkFiles(dir: string, pred: (name: string) => boolean, acc: str
     return acc;
   }
   for (const entry of entries) {
+    if (acc.length >= maxFiles) break;
     const full = path.join(dir, entry.name);
-    if (entry.isDirectory()) walkFiles(full, pred, acc);
-    else if (entry.isFile() && pred(entry.name)) acc.push(full);
+    if (entry.isDirectory()) {
+      walkFiles(full, pred, acc, { maxFiles, maxDepth, depth: depth + 1 });
+    } else if (entry.isFile() && pred(entry.name)) {
+      acc.push(full);
+    }
   }
   return acc;
 }

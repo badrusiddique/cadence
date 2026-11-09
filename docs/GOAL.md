@@ -38,6 +38,7 @@ Cadence is intentionally original (~6–8k LOC). Capability surface tracks AEC�
 | E2E UI 1.0 pass | Done | `docs/E2E-1.0.md` |
 | Marketplace icon | Done | `assets/icon-256.png` (C + pulse) |
 | Stable version | Done | `1.0.0` |
+| Enterprise hardening | Done | `1.1.0` — RPC guard, ingest caps, offline UI, redact, CI, ENTERPRISE.md |
 | Session detail drill-down | Done | `getSessionDetail` |
 | Harness comparison | Done | `getHarnessComparison` |
 | Flow scoring | Done | `src/analyze/flow.ts` |

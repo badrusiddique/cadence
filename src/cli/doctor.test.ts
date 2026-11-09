@@ -8,5 +8,8 @@ describe('doctor', () => {
     expect(report.totals).toBeTypeOf('object');
     expect(report.evidence.state).toBe('observed');
     expect(Array.isArray(report.recommendations)).toBe(true);
+    expect(report.enterprise.rpcAllowlistSize).toBeGreaterThan(20);
+    expect(report.enterprise.privacy).toContain('no-telemetry');
+    expect(['enterprise-ready', 'ready', 'needs-setup']).toContain(report.grade);
   });
 });

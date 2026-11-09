@@ -7,18 +7,21 @@ import {
 } from '../signals/loader';
 import { approve, getPending, type TrustStore } from '../signals/trust';
 import { parseSignalMarkdown } from '../signals/engine';
+import { sanitizeRpcParams } from './rpc-guard';
 
 export interface HostContext {
   analyzer: Analyzer;
   trustStore?: TrustStore | null;
   workspaceRoot?: string;
+  redactSensitive?: boolean;
 }
 
 export async function handleRpc(
   ctx: HostContext,
   method: string,
-  params: Record<string, unknown>,
+  rawParams: Record<string, unknown>,
 ): Promise<unknown> {
+  const params = sanitizeRpcParams(method, rawParams || {});
   const filter = {
     workspaceId: typeof params.workspaceId === 'string' ? params.workspaceId : undefined,
     harness: typeof params.harness === 'string' ? params.harness : undefined,
@@ -92,9 +95,12 @@ export async function handleRpc(
     case 'getHub':
       return a.getHub(filter);
     case 'exportSummary':
-      return a.exportSummary(filter);
+      return a.exportSummary(filter, { redactSensitive: ctx.redactSensitive });
     case 'copyMarkdown':
-      return { copied: true, markdown: a.exportSummary(filter).markdown };
+      return {
+        copied: true,
+        markdown: a.exportSummary(filter, { redactSensitive: ctx.redactSensitive }).markdown,
+      };
     case 'listSignals':
       return listSignalCatalog({ store: ctx.trustStore, workspaceRoot: ctx.workspaceRoot });
     case 'getSignalTemplate':

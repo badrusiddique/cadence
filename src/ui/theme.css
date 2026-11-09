@@ -1,5 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap');
-
+/* Offline-first: no CDN font fetches (enterprise / air-gapped default). */
 :root {
   color-scheme: dark;
   --surface-base: #0d0d0d;
@@ -26,8 +25,8 @@
   --chart-2: #33cc94;
   --chart-3: #f4ae34;
   --chart-4: #eb6847;
-  --font-sans: 'IBM Plex Sans', system-ui, sans-serif;
-  --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+  --font-sans: 'Segoe UI', 'SF Pro Text', 'Helvetica Neue', system-ui, sans-serif;
+  --font-mono: 'SF Mono', 'Cascadia Code', 'Consolas', ui-monospace, monospace;
   --radius: 5px;
   --radius-lg: 8px;
   --motion: 160ms cubic-bezier(0.2, 0.8, 0.2, 1);

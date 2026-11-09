@@ -2,7 +2,7 @@
   "name": "cadence-insights",
   "displayName": "Cadence — Agent Engineering Insights",
   "description": "Local-first insights for AI coding assistants. Watch sessions, quantify output, refine habits, grow practice — no telemetry, no log mutation.",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "publisher": "badrusiddique",
   "author": {
     "name": "Badru Siddique"
@@ -486,6 +486,30 @@
           "type": "number",
           "default": 1000,
           "description": "Custom monthly credit budget when budgetSku is custom."
+        },
+        "cadence.redactSensitive": {
+          "type": "boolean",
+          "default": false,
+          "description": "When true, exports and share snapshots omit prompt excerpts and habit example text (enterprise sharing)."
+        },
+        "cadence.offlineUi": {
+          "type": "boolean",
+          "default": true,
+          "description": "Air-gapped webview CSP: block third-party font/CDN requests (recommended for enterprise)."
+        },
+        "cadence.maxSessions": {
+          "type": "number",
+          "default": 5000,
+          "minimum": 100,
+          "maximum": 50000,
+          "description": "Hard cap on sessions loaded into memory per reload (host safety)."
+        },
+        "cadence.maxFilesPerWalk": {
+          "type": "number",
+          "default": 8000,
+          "minimum": 100,
+          "maximum": 100000,
+          "description": "Hard cap on files scanned per harness directory walk."
         }
       }
     }

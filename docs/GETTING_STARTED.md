@@ -16,12 +16,12 @@ npm run package
 Install the VSIX:
 
 ```bash
-code --install-extension cadence-insights-1.0.0.vsix
+code --install-extension cadence-insights-1.1.0.vsix
 # Cursor:
-cursor --install-extension cadence-insights-1.0.0.vsix
+cursor --install-extension cadence-insights-1.1.0.vsix
 ```
 
-Requires **VS Code / Cursor 1.125+** and **Node 20+** to build. Cadence **1.0.0** is the first stable release.
+Requires **VS Code / Cursor 1.125+** and **Node 20+** to build. Current stable: **1.1.0** (enterprise-hardened).
 
 ### From the Marketplace
 
