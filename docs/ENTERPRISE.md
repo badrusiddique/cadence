@@ -48,6 +48,6 @@ Ask the user for:
 
 - `Cadence: Show Output` log excerpt (no prompts when redact is on)  
 - `npm run cli -- doctor --json`  
-- Extension version (`1.2.2+`)  
+- Extension version (`1.2.3+`)  
 
 Do **not** request raw `~/.claude` / chat JSONL dumps unless under an existing DLP exception.

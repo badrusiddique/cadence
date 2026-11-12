@@ -4,11 +4,13 @@ import { parseClaudeSessions } from './harnesses/claude';
 import { parseCodexSessions } from './harnesses/codex';
 import { parseCopilotCliSessions } from './harnesses/copilot-cli';
 import { parseCursorSessions } from './harnesses/cursor';
+import { findCursorUserDirs, loadCursorComposerSessions } from './harnesses/cursor-composer';
 import { parseOpenCodeSessions } from './harnesses/opencode';
 import { parseVsCodeSessions } from './harnesses/vscode';
 import { buildFixtureSessions } from './fixtures';
 import { readIngestCache, writeIngestCache } from './cache';
 import { resolveIngestLimits, truncateSessions, type IngestLimits } from './limits';
+import * as path from 'path';
 
 export type ProgressFn = (update: { phase: string; detail?: string; ratio?: number }) => void;
 
@@ -116,6 +118,14 @@ export function ingestAll(options?: {
       run: () => {
         sourcePaths.push(...sources.cursor);
         return parseCursorSessions(sources.cursor);
+      },
+    },
+    {
+      name: 'Cursor Composer DB',
+      run: () => {
+        const userDirs = findCursorUserDirs();
+        for (const d of userDirs) sourcePaths.push(path.join(d, 'globalStorage', 'state.vscdb'));
+        return loadCursorComposerSessions(userDirs);
       },
     },
   ];

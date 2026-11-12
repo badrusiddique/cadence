@@ -11,7 +11,7 @@ Cadence reads AI coding sessions already on your machine and shows them in a das
    or open [badrusiddique.cadence-insights](https://marketplace.visualstudio.com/items?itemName=badrusiddique.cadence-insights)
 3. Install, then reload if prompted
 
-Needs **VS Code / Cursor 1.125+**. Current release: **1.2.2**.
+Needs **VS Code / Cursor 1.125+**. Current release: **1.2.3**.
 
 ### VSIX from source
 
@@ -20,9 +20,9 @@ git clone https://github.com/badrusiddique/cadence.git
 cd cadence
 npm ci
 npm run package
-code --install-extension cadence-insights-1.2.2.vsix
+code --install-extension cadence-insights-1.2.3.vsix
 # Cursor:
-cursor --install-extension cadence-insights-1.2.2.vsix
+cursor --install-extension cadence-insights-1.2.3.vsix
 ```
 
 Needs **Node 20+** to build. On Windows PowerShell, if scripts are blocked:

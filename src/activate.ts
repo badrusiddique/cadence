@@ -224,9 +224,40 @@ async function reload(context: vscode.ExtensionContext, openPanel = false, bustC
         },
         onProgress: (u) => progress.report({ message: u.detail || u.phase }),
       });
-      analyzer = new Analyzer(result.sessions, result.workspaces, signals);
+      progress.report({ message: 'Cursor Composer database' });
+      let sessions = result.sessions;
+      let workspaces = result.workspaces;
+      try {
+        const { loadCursorComposerSessionsAsync } = await import('./ingest/harnesses/cursor-composer');
+        const composerSessions = await loadCursorComposerSessionsAsync();
+        if (composerSessions.length > 0) {
+          const byId = new Map(sessions.map((s) => [s.sessionId, s] as const));
+          for (const s of composerSessions) byId.set(s.sessionId, s);
+          sessions = [...byId.values()];
+          workspaces = new Map();
+          for (const s of sessions) {
+            if (!workspaces.has(s.workspaceId)) {
+              workspaces.set(s.workspaceId, {
+                id: s.workspaceId,
+                name: s.workspaceName,
+                path: s.workspaceRootPath || '',
+              });
+            }
+          }
+          log.info('composer db sessions', { count: composerSessions.length });
+        }
+      } catch (err) {
+        log.warn('composer db read skipped', {
+          error: err instanceof Error ? err.message : String(err),
+        });
+      }
+      analyzer = new Analyzer(sessions, workspaces, signals);
       for (const err of result.errors) log.warn(err.message, { source: err.source });
-      log.info('reload complete', { sessions: result.sessions.length, signals: signals.length, sources: result.sources.length });
+      log.info('reload complete', {
+        sessions: sessions.length,
+        signals: signals.length,
+        sources: result.sources.length,
+      });
       sidebarProvider?.refresh();
       if (openPanel || CadencePanel.current) {
         CadencePanel.show(context.extensionUri, analyzer, {

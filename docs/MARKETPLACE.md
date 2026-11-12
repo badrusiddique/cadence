@@ -27,7 +27,7 @@ Checklist:
 ## Upload the VSIX in the browser
 
 1. Open [Marketplace Management](https://marketplace.visualstudio.com/manage/publishers/badrusiddique)
-2. Build: `npm run package` → `cadence-insights-1.2.2.vsix`
+2. Build: `npm run package` → `cadence-insights-1.2.3.vsix`
 3. **+ New extension** → Visual Studio Code → upload the `.vsix`
 4. Confirm the public listing URL
 
@@ -46,7 +46,7 @@ npx vsce login badrusiddique
 # paste the PAT when prompted (do not commit it)
 npx vsce publish
 # or:
-npx vsce publish --packagePath cadence-insights-1.2.2.vsix
+npx vsce publish --packagePath cadence-insights-1.2.3.vsix
 ```
 
 Bump `version` in `package.json` before each release. Tag `vX.Y.Z` on the git remote.
@@ -54,7 +54,7 @@ Bump `version` in `package.json` before each release. Tag `vX.Y.Z` on the git re
 ### Open VSX (optional)
 
 ```bash
-npx ovsx publish cadence-insights-1.2.2.vsix -p "$OVSX_PAT"
+npx ovsx publish cadence-insights-1.2.3.vsix -p "$OVSX_PAT"
 ```
 
 ## Install without publishing

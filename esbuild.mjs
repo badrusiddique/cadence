@@ -64,6 +64,11 @@ async function build() {
     cpSync(join(__dirname, 'src/signals/metrics'), join(__dirname, 'dist/signals/metrics'), { recursive: true });
   }
 
+  const wasmSrc = join(__dirname, 'node_modules/sql.js/dist/sql-wasm.wasm');
+  if (existsSync(wasmSrc)) {
+    cpSync(wasmSrc, join(__dirname, 'dist/sql-wasm.wasm'));
+  }
+
   if (watch) {
     await Promise.all([extension.watch(), webview.watch(), worker.watch(), cli.watch()]);
     console.log('watching…');

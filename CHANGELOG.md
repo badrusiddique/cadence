@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.2.3 (2026-11-12)
+
+Read real Cursor Local Agent chats from Composer `state.vscdb`.
+
+- Primary source is `%APPDATA%/Cursor/User/globalStorage/state.vscdb` (composerData + bubbleId rows)
+- Verified against a real SQLite fixture before release (not JSONL-only unit mocks)
+- sql.js fallback when `node:sqlite` is unavailable; wasm shipped in `dist/`
+
 ## 1.2.2 (2026-11-12)
 
 Cursor local Agent transcripts actually parse again.

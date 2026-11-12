@@ -474,7 +474,7 @@ async function pageOverview() {
           <div class="empty">
             <h2>No sessions on this machine yet</h2>
             <p>Cadence does not invent sample workspaces unless you turn on <strong>cadence.demoMode</strong>.</p>
-            <p class="muted">Use Copilot, Cursor, Claude Code, Codex, or OpenCode, then run <strong>Cadence: Reload Sessions</strong>.</p>
+            <p class="muted">In Cursor, Local Agent chats are read from Composer storage (<span class="mono">state.vscdb</span>). Use an Agent chat here, then <strong>Cadence: Reload Sessions</strong>.</p>
           </div>
         </section>
       </div>
