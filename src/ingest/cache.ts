@@ -14,11 +14,20 @@ interface CachePayload {
   errors: IngestResult['errors'];
 }
 
+function isFixtureSources(sources: string[] | undefined): boolean {
+  return (sources || []).some((s) => s === 'fixtures' || s === 'fixtures-fallback');
+}
+
 export function readIngestCache(maxAgeMs = 30 * 60_000): IngestResult | null {
   try {
     if (!fs.existsSync(CACHE_FILE)) return null;
     const raw = JSON.parse(fs.readFileSync(CACHE_FILE, 'utf8')) as CachePayload;
     if (!raw.savedAt || Date.now() - raw.savedAt > maxAgeMs) return null;
+    // Never revive old demo/fixture caches into a real install.
+    if (isFixtureSources(raw.sources)) {
+      clearIngestCache();
+      return null;
+    }
     return {
       sessions: raw.sessions || [],
       workspaces: new Map(raw.workspaces || []),
@@ -33,6 +42,7 @@ export function readIngestCache(maxAgeMs = 30 * 60_000): IngestResult | null {
 
 export function writeIngestCache(result: IngestResult): void {
   try {
+    if (isFixtureSources(result.sources)) return;
     fs.mkdirSync(CACHE_DIR, { recursive: true });
     const payload: CachePayload = {
       savedAt: Date.now(),

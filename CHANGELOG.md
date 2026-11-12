@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.2.1 (2026-11-12)
+
+Empty install no longer looks like fake workspaces.
+
+- Removed silent demo fixtures when no local logs are found (Demo Mode stays opt-in)
+- Ignore/clear cached fixture payloads so old demos do not stick after Demo Mode is off
+- Empty dashboard shows a clear empty state instead of perfect scores / vibe titles
+
 ## 1.2.0 (2026-11-12)
 
 Marketplace launch polish.

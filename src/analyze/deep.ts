@@ -472,7 +472,7 @@ export function getVibeRole(practice: PracticeScore[], habits: HabitFinding[]) {
   return {
     title,
     score: Math.round(avg),
-    reason: top ? `Top pattern: ${top.name}` : 'Steady practice — no dominant anti-pattern',
+    reason: top ? `Top pattern: ${top.name}` : 'Steady practice. No dominant anti-pattern.',
     topPattern: top?.name ?? null,
   };
 }

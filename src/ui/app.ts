@@ -436,27 +436,50 @@ async function pageOverview() {
   const data = await query<any>('getOverview');
   state.badges = { ...(data.badges || {}) };
   state.topPattern = data.topPattern || null;
-  state.notice = data.sessions === 0 ? 'No sessions in range. Enable Demo Mode or sync local harness logs.' : '';
+  state.notice =
+    data.sessions === 0
+      ? 'No local AI sessions yet. Cadence only reads logs already on this machine. Demo Mode is optional sample data for a tour.'
+      : '';
 
   const activity = data.activity || [];
   const harnessEntries = Object.entries(data.byHarness || {}) as [string, number][];
-  queueCharts([
-    {
-      kind: 'bar',
-      id: 'chart-overview-activity',
-      labels: activity.slice(-28).map((a: any) => a.date.slice(5)),
-      datasets: [
-        { label: 'Requests', data: activity.slice(-28).map((a: any) => a.requests) },
-        { label: 'AI LOC', data: activity.slice(-28).map((a: any) => a.aiLoc || 0), color: '#33cc94' },
-      ],
-    },
-    {
-      kind: 'doughnut',
-      id: 'chart-overview-harness',
-      labels: harnessEntries.map(([k]) => k),
-      values: harnessEntries.map(([, v]) => v),
-    },
-  ]);
+  if (data.sessions > 0) {
+    queueCharts([
+      {
+        kind: 'bar',
+        id: 'chart-overview-activity',
+        labels: activity.slice(-28).map((a: any) => a.date.slice(5)),
+        datasets: [
+          { label: 'Requests', data: activity.slice(-28).map((a: any) => a.requests) },
+          { label: 'AI LOC', data: activity.slice(-28).map((a: any) => a.aiLoc || 0), color: '#33cc94' },
+        ],
+      },
+      {
+        kind: 'doughnut',
+        id: 'chart-overview-harness',
+        labels: harnessEntries.map(([k]) => k),
+        values: harnessEntries.map(([, v]) => v),
+      },
+    ]);
+  } else {
+    queueCharts([]);
+  }
+
+  if (data.sessions === 0) {
+    return html`
+      <div class="page">
+        ${header('Dashboard', 'Waiting for local AI session logs.', 'Empty')}
+        <div class="banner">${state.notice}</div>
+        <section class="panel">
+          <div class="empty">
+            <h2>No sessions on this machine yet</h2>
+            <p>Cadence does not invent sample workspaces unless you turn on <strong>cadence.demoMode</strong>.</p>
+            <p class="muted">Use Copilot, Cursor, Claude Code, Codex, or OpenCode, then run <strong>Cadence: Reload Sessions</strong>.</p>
+          </div>
+        </section>
+      </div>
+    `;
+  }
 
   return html`
     <div class="page">

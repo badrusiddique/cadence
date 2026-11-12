@@ -131,19 +131,19 @@ export function ingestAll(options?: {
 
   report?.({ phase: 'done', detail: `${sessions.length} sessions`, ratio: 1 });
 
-  // If nothing found, fall back to fixtures so first-run is useful.
+  // Empty install stays empty. Demo fixtures are opt-in via cadence.demoMode only.
   if (sessions.length === 0) {
-    const fixtures = buildFixtureSessions();
     return {
-      sessions: fixtures,
-      workspaces: indexWorkspaces(fixtures),
+      sessions: [],
+      workspaces: new Map(),
       editLocIndex,
-      sources: ['fixtures-fallback'],
+      sources: [],
       errors: [
         ...errors,
         {
           source: 'discover',
-          message: 'No local AI session logs found. Showing demo fixtures. Connect a harness or toggle Cadence demo mode.',
+          message:
+            'No local AI session logs found. Use Copilot, Cursor, Claude Code, Codex, or OpenCode, then Reload. Or enable cadence.demoMode for sample data.',
         },
       ],
     };

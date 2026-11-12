@@ -77,15 +77,18 @@ export class Analyzer {
     const aiLoc = requests.reduce((n, r) => n + r.aiCode.reduce((m, c) => m + c.lineCount, 0), 0);
     const userLoc = requests.reduce((n, r) => n + r.userCode.reduce((m, c) => m + c.lineCount, 0), 0);
     const canceled = requests.filter((r) => r.isCanceled).length;
-    const practiceBase = this.getPracticeScores(filter);
-    const prevPractice = this.getPracticeScores(previousWeekFilter(filter));
+    const empty = sessions.length === 0;
+    const practiceBase = empty ? [] : this.getPracticeScores(filter);
+    const prevPractice = empty ? [] : this.getPracticeScores(previousWeekFilter(filter));
     const practice = withWow(practiceBase, prevPractice);
     const activity = this.getDailyActivity(filter);
     const avgScore = practice.length ? Math.round(practice.reduce((n, p) => n + p.score, 0) / practice.length) : 0;
-    const habits = this.getHabits(filter).filter((h) => h.triggered);
-    const skills = this.getSkillCatalog(filter).custom;
-    const flow = this.getFlowState(filter);
-    const vibe = getVibeRole(practiceBase, this.getHabits(filter));
+    const habits = empty ? [] : this.getHabits(filter).filter((h) => h.triggered);
+    const skills = empty ? [] : this.getSkillCatalog(filter).custom;
+    const flow = empty
+      ? { overallFlowScore: 0, suggestions: [] as string[] }
+      : this.getFlowState(filter);
+    const vibe = empty ? null : getVibeRole(practiceBase, this.getHabits(filter));
     const production = getCodeProduction(this.sessions, filter);
     const languages = production.byLanguage.labels.slice(0, 6);
 
@@ -99,7 +102,7 @@ export class Analyzer {
         .slice(0, 2)
         .map((p) => {
           const tip = p.findings.find((f) => f.triggered)?.improvement;
-          return tip || `Raise ${p.label} — currently ${p.score}.`;
+          return tip || `Raise ${p.label} (currently ${p.score}).`;
         }),
       ...flow.suggestions.slice(0, 1),
       ...(skills[0] ? [`Repeated prompt (${skills[0].count}×): turn it into a skill.`] : []),

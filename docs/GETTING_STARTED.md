@@ -11,7 +11,7 @@ Cadence reads AI coding sessions already on your machine and shows them in a das
    or open [badrusiddique.cadence-insights](https://marketplace.visualstudio.com/items?itemName=badrusiddique.cadence-insights)
 3. Install, then reload if prompted
 
-Needs **VS Code / Cursor 1.125+**. Current release: **1.2.0**.
+Needs **VS Code / Cursor 1.125+**. Current release: **1.2.1**.
 
 ### VSIX from source
 
@@ -20,9 +20,9 @@ git clone https://github.com/badrusiddique/cadence.git
 cd cadence
 npm ci
 npm run package
-code --install-extension cadence-insights-1.2.0.vsix
+code --install-extension cadence-insights-1.2.1.vsix
 # Cursor:
-cursor --install-extension cadence-insights-1.2.0.vsix
+cursor --install-extension cadence-insights-1.2.1.vsix
 ```
 
 Needs **Node 20+** to build. On Windows PowerShell, if scripts are blocked:
@@ -41,11 +41,11 @@ Publishing notes: [MARKETPLACE.md](MARKETPLACE.md).
 
 You should see Observe → Measure → Improve → Level Up in the left rail.
 
-## 3. No logs yet? Demo Mode
+## 3. No logs yet?
 
-Settings → search `cadence.demoMode` → enable.
+By default Cadence stays **empty** until it finds real local AI session logs. It does not invent sample workspaces on install.
 
-If Cadence finds zero harness sessions, it can also fall back to fixtures automatically.
+Want a tour with fake data? Settings → `cadence.demoMode` → enable (opt-in only).
 
 Browser-only tryout (no VS Code):
 

@@ -9,7 +9,7 @@ Cadence reads session logs already on your machine, shows habits worth fixing, a
   <img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-0D8F6F">
   <img alt="VS Code 1.125+" src="https://img.shields.io/badge/VS%20Code-1.125%2B-142033">
   <img alt="Local only" src="https://img.shields.io/badge/privacy-local%20only-0D8F6F">
-  <img alt="Version 1.2.0" src="https://img.shields.io/badge/version-1.2.0-0D8F6F">
+  <img alt="Version 1.2.1" src="https://img.shields.io/badge/version-1.2.1-0D8F6F">
 </p>
 
 <p align="center">
@@ -38,8 +38,8 @@ git clone https://github.com/badrusiddique/cadence.git
 cd cadence
 npm ci
 npm run package
-code --install-extension cadence-insights-1.2.0.vsix
-# or: cursor --install-extension cadence-insights-1.2.0.vsix
+code --install-extension cadence-insights-1.2.1.vsix
+# or: cursor --install-extension cadence-insights-1.2.1.vsix
 ```
 
 Windows PowerShell blocking `npm`:

@@ -22,6 +22,14 @@ describe('Analyzer', () => {
     expect(overview.practice.length).toBe(5);
   });
 
+  it('keeps empty installs empty (no fake vibe or perfect scores)', () => {
+    const overview = new Analyzer([], new Map(), []).getOverview();
+    expect(overview.sessions).toBe(0);
+    expect(overview.practice).toEqual([]);
+    expect(overview.vibe).toBeNull();
+    expect(overview.practiceScore).toBe(0);
+  });
+
   it('computes budget estimates with disclaimer', () => {
     const budget = makeAnalyzer().getBudget();
     expect(budget.creditsUsed).toBeGreaterThan(0);

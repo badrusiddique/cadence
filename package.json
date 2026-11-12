@@ -2,7 +2,7 @@
   "name": "cadence-insights",
   "displayName": "Cadence: Agent Engineering Insights",
   "description": "Local insights for AI coding assistants. Watch sessions, measure output, fix habits. No telemetry. Logs stay read-only.",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "publisher": "badrusiddique",
   "author": {
     "name": "Badru Siddique"
@@ -468,7 +468,7 @@
         "cadence.demoMode": {
           "type": "boolean",
           "default": false,
-          "description": "Load synthetic fixtures instead of local session logs (useful for demos and screenshots)."
+          "description": "Opt-in sample data for demos and screenshots. Off by default. Real installs stay empty until local AI logs are found."
         },
         "cadence.budgetSku": {
           "type": "string",
