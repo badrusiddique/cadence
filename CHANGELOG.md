@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.2.9 (2026-11-12)
+
+Lock harness matrix: isolated real-prompt ingest tests for Copilot Chat, Cursor transcripts, Composer DB, Claude Code, Codex CLI, Copilot CLI, and OpenCode.
+
+
 ## 1.2.8 (2026-11-12)
 
 Stop Composer merge from collapsing Copilot/jsonl sessions that share a sessionId.
