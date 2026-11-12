@@ -2,6 +2,12 @@
 
 Cadence ships as a standard VS Code extension (`.vsix`). The same package installs in VS Code, Cursor, and other compatible editors.
 
+**Publisher id:** `badrusiddique`  
+**Extension id:** `badrusiddique.cadence-insights`  
+**Listing:** https://marketplace.visualstudio.com/items?itemName=badrusiddique.cadence-insights
+
+You do **not** need a paid Azure subscription (`portal.azure.com` Pay-As-You-Go / Free Trial) to publish.
+
 ## Before you publish
 
 ```bash
@@ -16,36 +22,39 @@ Confirm:
 - [ ] `assets/icon.png` is ≥128×128  
 - [ ] Overview loads with `cadence.demoMode`  
 - [ ] Privacy claims still match the product (local-only)  
-- [ ] `publisher` in `package.json` matches your Marketplace publisher id (`badrusiddique`)
+- [ ] `publisher` in `package.json` matches Marketplace publisher id (`badrusiddique`)
 
-## One-time publisher setup
+## Recommended: upload the VSIX in the browser
 
-1. Create a publisher at [Marketplace Management](https://marketplace.visualstudio.com/manage)  
-   - Publisher id should match `package.json` → `"publisher": "badrusiddique"`  
-2. In Azure DevOps, create a **Personal Access Token** with scope **Marketplace → Manage**  
-3. Login locally:
+1. Create / open the publisher at [Marketplace Management](https://marketplace.visualstudio.com/manage/publishers/badrusiddique)  
+2. Build locally: `npm run package` → `cadence-insights-1.1.0.vsix`  
+3. Click **+ New extension** → choose **Visual Studio Code** → upload the `.vsix`  
+4. After it processes, verify the public listing URL above  
+
+For later versions: open the existing extension on that page → upload a new VSIX (or use `vsce publish` below).
+
+## Optional: publish with `vsce` + PAT
+
+Azure DevOps is free and separate from Azure cloud billing. Create an org at [https://aex.dev.azure.com/me](https://aex.dev.azure.com/me) or [https://dev.azure.com/_new](https://dev.azure.com/_new) — not `portal.azure.com`.
+
+1. Avatar → **Personal access tokens** → **+ New Token**  
+2. Scope: **Custom** → **Show all scopes** → **Marketplace → Manage**  
+3. Locally:
 
 ```bash
 npx vsce login badrusiddique
 # paste the PAT when prompted (do not commit it)
-```
-
-## Publish
-
-```bash
-# package + publish current version
 npx vsce publish
-
-# or publish an existing artifact
-npx vsce publish --packagePath cadence-insights-1.0.0.vsix
+# or:
+npx vsce publish --packagePath cadence-insights-1.1.0.vsix
 ```
 
-Bump `version` in `package.json` (semver) before each release. Tag `vX.Y.Z` on the git remote and attach the `.vsix`.
+Bump `version` in `package.json` (semver) before each release. Tag `vX.Y.Z` on the git remote.
 
 ### Open VSX (optional, helps Cursor / open editors)
 
 ```bash
-npx ovsx publish cadence-insights-1.0.0.vsix -p "$OVSX_PAT"
+npx ovsx publish cadence-insights-1.1.0.vsix -p "$OVSX_PAT"
 ```
 
 ## Install without publishing
@@ -57,10 +66,10 @@ cursor --install-extension cadence-insights-*.vsix
 
 ## After publish
 
-1. Open the Marketplace listing → verify screenshots / description  
+1. Open the Marketplace listing → verify icon, description, and README  
 2. From a clean machine: install from Marketplace → Open Overview → demo mode  
-3. Update README badges from “Marketplace ready” to the live listing URL when you have one  
+3. Optionally publish the same VSIX to Open VSX  
 
 ## Need help?
 
-If you have a Marketplace PAT available in the environment (env var only — never paste into chat), the maintainer can run `vsce publish` for you. Otherwise run the commands above on a trusted machine.
+If you have a Marketplace PAT available in the environment (env var only — never paste into chat), the maintainer can run `vsce publish` for you. Otherwise use the browser upload path above.

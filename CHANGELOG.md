@@ -2,7 +2,7 @@
 
 ## 1.1.0 — 2026-11-09
 
-Enterprise production hardening (Marketplace publish still optional).
+Enterprise production hardening — first Marketplace-ready build.
 
 - RPC allowlist + strict param sanitization (`src/host/rpc-guard.ts`)
 - Ingest caps: max sessions / walk depth / files (`cadence.maxSessions`, `cadence.maxFilesPerWalk`)
@@ -12,6 +12,7 @@ Enterprise production hardening (Marketplace publish still optional).
 - Doctor reports enterprise grade + privacy controls
 - CI workflow (typecheck, lint, test, package)
 - Admin guide: `docs/ENTERPRISE.md`
+- Docs: Marketplace install as primary path; leaner VSIX ignores
 
 ## 1.0.0 — 2026-11-09
 

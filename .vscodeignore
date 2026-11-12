@@ -3,6 +3,13 @@
 src/**
 docs/superpowers/**
 docs/references/**
+docs/MARKETPLACE.md
+docs/QA-AEC-VS-CADENCE.md
+docs/E2E-1.0.md
+docs/GOAL.md
+docs/REA-REVERSE-ENGINEERING.md
+docs/qa-matrix-v2.json
+.github/**
 node_modules/**
 .gitignore
 eslint.config.mjs

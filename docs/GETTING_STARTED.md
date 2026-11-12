@@ -4,28 +4,34 @@ Cadence turns the AI coding sessions already on your machine into a calm coachin
 
 ## 1. Install
 
-### From source (recommended today)
+### From the VS Marketplace (recommended)
+
+1. Open **Extensions** in VS Code or Cursor  
+2. Search **Cadence** by publisher `badrusiddique`  
+   — or open [badrusiddique.cadence-insights](https://marketplace.visualstudio.com/items?itemName=badrusiddique.cadence-insights)  
+3. **Install** → reload if prompted  
+
+Requires **VS Code / Cursor 1.125+**. Current stable: **1.1.0**.
+
+### From a VSIX (source build)
 
 ```bash
 git clone https://github.com/badrusiddique/cadence.git
 cd cadence
 npm ci
 npm run package
-```
-
-Install the VSIX:
-
-```bash
 code --install-extension cadence-insights-1.1.0.vsix
 # Cursor:
 cursor --install-extension cadence-insights-1.1.0.vsix
 ```
 
-Requires **VS Code / Cursor 1.125+** and **Node 20+** to build. Current stable: **1.1.0** (enterprise-hardened).
+Requires **Node 20+** to build. On Windows PowerShell, if scripts are blocked:
 
-### From the Marketplace
+```powershell
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+```
 
-When the listing is live, search **“Cadence”** by publisher `badrusiddique` in the Extensions view. Until then, use the VSIX path above — see [MARKETPLACE.md](MARKETPLACE.md).
+Publisher / packaging notes: [MARKETPLACE.md](MARKETPLACE.md).
 
 ## 2. Open the dashboard
 

@@ -6,11 +6,11 @@ Local-first insights for Copilot, Claude Code, Codex, Cursor, and OpenCode — r
 Cadence reads the session logs you already have, surfaces habits worth fixing, and never phones home.
 
 <p align="center">
+  <a href="https://marketplace.visualstudio.com/items?itemName=badrusiddique.cadence-insights"><img alt="VS Marketplace" src="https://img.shields.io/badge/VS%20Marketplace-badrusiddique.cadence--insights-0D8F6F"></a>
   <img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-0D8F6F">
   <img alt="VS Code 1.125+" src="https://img.shields.io/badge/VS%20Code-1.125%2B-142033">
   <img alt="Local only" src="https://img.shields.io/badge/privacy-local%20only-0D8F6F">
   <img alt="Version 1.1.0" src="https://img.shields.io/badge/version-1.1.0-0D8F6F">
-  <img alt="Enterprise hardened" src="https://img.shields.io/badge/enterprise-hardened-0D8F6F">
 </p>
 
 <p align="center">
@@ -24,7 +24,16 @@ Cadence reads the session logs you already have, surfaces habits worth fixing, a
 
 ## Get started in 2 minutes
 
-### Option A — Install a VSIX (fastest)
+### Option A — Install from the Marketplace (recommended)
+
+1. In VS Code or Cursor, open **Extensions**
+2. Search **Cadence** (publisher `badrusiddique`)  
+   or open: [Marketplace listing](https://marketplace.visualstudio.com/items?itemName=badrusiddique.cadence-insights)
+3. **Install** → reload if asked
+4. **Command Palette → `Cadence: Open Overview`**
+5. No local logs yet? Enable **Settings → `cadence.demoMode`**
+
+### Option B — Install a VSIX from source
 
 ```bash
 git clone https://github.com/badrusiddique/cadence.git
@@ -35,11 +44,14 @@ code --install-extension cadence-insights-1.1.0.vsix
 # or: cursor --install-extension cadence-insights-1.1.0.vsix
 ```
 
-1. Open VS Code / Cursor  
-2. **Command Palette → `Cadence: Open Overview`**  
-3. If you have no local logs yet, enable **Settings → `cadence.demoMode`**
+On Windows PowerShell, if `npm` is blocked by execution policy:
 
-### Option B — Preview the UI in a browser (no extension install)
+```powershell
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+# or use Command Prompt / npm.cmd
+```
+
+### Option C — Preview the UI in a browser (no extension install)
 
 ```bash
 npm ci
