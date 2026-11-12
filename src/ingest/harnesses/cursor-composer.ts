@@ -344,13 +344,20 @@ function loadWithNodeSqlite(userDirs: string[]): Session[] | null {
       const globalDb = path.join(userDir, 'globalStorage', 'state.vscdb');
       const snap = snapshotDb(globalDb);
       if (!snap) continue;
-      const db = new DatabaseSync(snap, { readOnly: true });
+      // VS Code / non-Cursor User dirs often have state.vscdb without cursorDiskKV.
+      // Fail one dir; never abort the whole batch (that zeroed sessions when host was Code).
       try {
-        const composers = db.prepare(`SELECT key, value FROM cursorDiskKV WHERE key LIKE ?`).all('composerData:%');
-        const bubbles = db.prepare(`SELECT key, value FROM cursorDiskKV WHERE key LIKE ?`).all('bubbleId:%');
-        sessions.push(...sessionsFromKvRows(composers, bubbles));
+        const db = new DatabaseSync(snap, { readOnly: true });
+        try {
+          const composers = db.prepare(`SELECT key, value FROM cursorDiskKV WHERE key LIKE ?`).all('composerData:%');
+          const bubbles = db.prepare(`SELECT key, value FROM cursorDiskKV WHERE key LIKE ?`).all('bubbleId:%');
+          sessions.push(...sessionsFromKvRows(composers, bubbles));
+        } finally {
+          db.close();
+        }
+      } catch {
+        /* skip this dir */
       } finally {
-        db.close();
         try {
           fs.rmSync(path.dirname(snap), { recursive: true, force: true });
         } catch {
@@ -376,19 +383,24 @@ async function loadWithSqlJs(userDirs: string[]): Promise<Session[]> {
     const globalDb = path.join(userDir, 'globalStorage', 'state.vscdb');
     const snap = snapshotDb(globalDb);
     if (!snap) continue;
-    const db = new SQL.Database(fs.readFileSync(snap));
     try {
-      const composers: KvRow[] = [];
-      const bubbles: KvRow[] = [];
-      for (const table of db.exec(`SELECT key, value FROM cursorDiskKV WHERE key LIKE 'composerData:%'`)) {
-        for (const row of table.values) composers.push({ key: String(row[0]), value: row[1] });
+      const db = new SQL.Database(fs.readFileSync(snap));
+      try {
+        const composers: KvRow[] = [];
+        const bubbles: KvRow[] = [];
+        for (const table of db.exec(`SELECT key, value FROM cursorDiskKV WHERE key LIKE 'composerData:%'`)) {
+          for (const row of table.values) composers.push({ key: String(row[0]), value: row[1] });
+        }
+        for (const table of db.exec(`SELECT key, value FROM cursorDiskKV WHERE key LIKE 'bubbleId:%'`)) {
+          for (const row of table.values) bubbles.push({ key: String(row[0]), value: row[1] });
+        }
+        sessions.push(...sessionsFromKvRows(composers, bubbles));
+      } finally {
+        db.close();
       }
-      for (const table of db.exec(`SELECT key, value FROM cursorDiskKV WHERE key LIKE 'bubbleId:%'`)) {
-        for (const row of table.values) bubbles.push({ key: String(row[0]), value: row[1] });
-      }
-      sessions.push(...sessionsFromKvRows(composers, bubbles));
+    } catch {
+      /* skip this dir — missing cursorDiskKV is normal for VS Code User DBs */
     } finally {
-      db.close();
       try {
         fs.rmSync(path.dirname(snap), { recursive: true, force: true });
       } catch {

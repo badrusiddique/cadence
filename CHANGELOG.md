@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.2.6 (2026-11-12)
+
+Skip non-Cursor `state.vscdb` files that lack `cursorDiskKV` instead of aborting the whole Composer ingest batch.
+
+- Fixes empty dashboard when Cadence runs in VS Code (or any host whose User DB is probed alongside Cursor’s)
+- Regression: VS Code-like DB + Cursor DB together still yield Composer sessions
+
 ## 1.2.5 (2026-11-12)
 
 Discover the live Cursor User dir from the extension host and surface Composer DB diagnostics.

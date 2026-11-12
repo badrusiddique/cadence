@@ -17,6 +17,8 @@ describe('ingest empty install', () => {
       demoMode: false,
       useCache: false,
       sources: emptySources,
+      // Exact empty list — do not pick up a real ~/.config/Cursor seeded on the test machine.
+      cursorUserDirs: [],
     });
     expect(result.sessions).toEqual([]);
     expect(result.workspaces.size).toBe(0);

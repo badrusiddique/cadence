@@ -125,7 +125,10 @@ export function ingestAll(options?: {
     {
       name: 'Cursor Composer DB',
       run: () => {
-        const userDirs = findCursorUserDirs(options?.cursorUserDirs ?? []);
+        // When cursorUserDirs is provided (including []), use it as the exact list — do not
+        // re-merge with default discovery. Tests pass [] to isolate empty-install behavior.
+        const userDirs =
+          options?.cursorUserDirs !== undefined ? options.cursorUserDirs : findCursorUserDirs();
         for (const d of userDirs) sourcePaths.push(path.join(d, 'globalStorage', 'state.vscdb'));
         return loadCursorComposerSessions(userDirs);
       },

@@ -146,4 +146,28 @@ describe('Cursor Composer DB', () => {
       fs.rmSync(extraRoot, { recursive: true, force: true });
     }
   });
+
+  it('skips a VS Code-like DB without cursorDiskKV and still loads Cursor DB', async () => {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const initSqlJs = require('sql.js');
+    const SQL = await initSqlJs({
+      locateFile: (file: string) => path.join(process.cwd(), 'node_modules/sql.js/dist', file),
+    });
+    const vscodeRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'cadence-vscode-user-'));
+    try {
+      const vsGlobal = path.join(vscodeRoot, 'globalStorage');
+      fs.mkdirSync(vsGlobal, { recursive: true });
+      const vsDb = new SQL.Database();
+      vsDb.run('CREATE TABLE ItemTable (key TEXT UNIQUE, value BLOB)');
+      vsDb.run('INSERT INTO ItemTable VALUES (?, ?)', ['foo', Buffer.from('bar')]);
+      fs.writeFileSync(path.join(vsGlobal, 'state.vscdb'), Buffer.from(vsDb.export()));
+      vsDb.close();
+
+      const sessions = loadCursorComposerSessions([vscodeRoot, fixtureRoot]);
+      expect(sessions.length).toBe(1);
+      expect(sessions[0].workspaceName).toBe('Summary request');
+    } finally {
+      fs.rmSync(vscodeRoot, { recursive: true, force: true });
+    }
+  });
 });
