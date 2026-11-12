@@ -2,7 +2,7 @@
   "name": "cadence-insights",
   "displayName": "Cadence: Agent Engineering Insights",
   "description": "Local insights for AI coding assistants. Watch sessions, measure output, fix habits. No telemetry. Logs stay read-only.",
-  "version": "1.2.7",
+  "version": "1.2.8",
   "publisher": "badrusiddique",
   "author": {
     "name": "Badru Siddique"

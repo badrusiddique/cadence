@@ -255,9 +255,16 @@ async function reload(context: vscode.ExtensionContext, openPanel = false, bustC
       try {
         const composerSessions = await loadCursorComposerSessionsAsync(userDirs);
         if (composerSessions.length > 0) {
-          const byId = new Map(sessions.map((s) => [s.sessionId, s] as const));
+          // Only replace other Composer-DB rows. Never collapse Copilot/jsonl/transcript
+          // sessions that happen to share a sessionId.
+          const kept = sessions.filter((s) => !String(s.workspaceId || '').startsWith('cursor-db:'));
+          const byId = new Map(
+            sessions
+              .filter((s) => String(s.workspaceId || '').startsWith('cursor-db:'))
+              .map((s) => [s.sessionId, s] as const),
+          );
           for (const s of composerSessions) byId.set(s.sessionId, s);
-          sessions = [...byId.values()];
+          sessions = [...kept, ...byId.values()];
           workspaces = new Map();
           for (const s of sessions) {
             if (!workspaces.has(s.workspaceId)) {

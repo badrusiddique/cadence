@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.2.8 (2026-11-12)
+
+Stop Composer merge from collapsing Copilot/jsonl sessions that share a sessionId.
+
+- Keep non-`cursor-db:` sessions intact when merging Composer DB rows
+- Verified against real project transcript replayed into Copilot `.jsonl` + Cursor transcripts (demoMode off)
+
+
 ## 1.2.7 (2026-11-12)
 
 Load real VS Code / GitHub Copilot Chat sessions from modern `.jsonl` append logs.
