@@ -72,7 +72,7 @@ class CadenceSidebarProvider implements vscode.WebviewViewProvider {
           <p class="value">${meta.sessionCount}</p>
           <p class="note">${harnesses.map(escapeHtml).join(' · ') || 'No harnesses yet'}</p>
         </div>`
-      : `<div class="card"><p class="note">No data yet — open the overview to sync local AI sessions.</p></div>`;
+      : `<div class="card"><p class="note">No data yet. Open the overview to sync local AI sessions.</p></div>`;
 
     return `<!DOCTYPE html>
 <html lang="en">
@@ -192,7 +192,7 @@ async function reload(context: vscode.ExtensionContext, openPanel = false, bustC
   const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
   const trustedWorkspace = vscode.workspace.isTrusted !== false;
   if (!trustedWorkspace) {
-    log.warn('workspace untrusted — project-layer signals will not load');
+    log.warn('workspace untrusted; project-layer signals will not load');
   }
 
   await vscode.window.withProgress(

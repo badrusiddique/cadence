@@ -13,18 +13,18 @@ Use GitHub Security Advisories on the Cadence repository, or contact the maintai
 | Built-in signals | Shipped with the extension |
 | Personal signals (`~/.cadence/signals`) | Written as drafts; **must be Approved** before load |
 | Project signals (`.cadence/signals`) | Require VS Code workspace trust + approval |
-| Signal Lab | Sandboxed predicate AST — **no `eval` / `Function`** |
+| Signal Lab | Sandboxed predicate AST. **No `eval` / `Function`** |
 | Ingest | Read-only; refuses paths outside known harness roots |
 
 ## Hardening notes (v1.1+)
 
 - Rule Studio **Save draft** and **Approve & load** are separate steps.  
-- Lab expressions only allow identifiers, literals, comparisons, `AND` / `OR`, and parentheses (AST — no `Function`).  
+- Lab expressions only allow identifiers, literals, comparisons, `AND` / `OR`, and parentheses (AST, no `Function`).  
 - Webview RPC is **allowlisted** with sanitized params.  
 - Ingest enforces session / file-walk caps.  
 - `cadence.offlineUi` (default on) blocks third-party CDN fetches in the webview CSP.  
 - `cadence.redactSensitive` omits prompt excerpts from exports.  
-- Session log contents are sensitive — treat `~/.cadence` like other local AI caches.  
+- Session log contents are sensitive. Treat `~/.cadence` like other local AI caches.  
 - Do not paste untrusted SignalSpec from the internet without review.  
 - Org rollout: [docs/ENTERPRISE.md](docs/ENTERPRISE.md).
 

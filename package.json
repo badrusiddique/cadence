@@ -1,8 +1,8 @@
 {
   "name": "cadence-insights",
-  "displayName": "Cadence — Agent Engineering Insights",
-  "description": "Local-first insights for AI coding assistants. Watch sessions, quantify output, refine habits, grow practice — no telemetry, no log mutation.",
-  "version": "1.1.0",
+  "displayName": "Cadence: Agent Engineering Insights",
+  "description": "Local insights for AI coding assistants. Watch sessions, measure output, fix habits. No telemetry. Logs stay read-only.",
+  "version": "1.2.0",
   "publisher": "badrusiddique",
   "author": {
     "name": "Badru Siddique"
@@ -110,7 +110,7 @@
         "id": "cadence.coach",
         "fullName": "Cadence",
         "name": "cadence",
-        "description": "Ask about your AI coding cadence — usage summary, habits, flow, and tool comparison.",
+        "description": "Ask about your AI coding cadence: usage summary, habits, flow, and tool comparison.",
         "isSticky": true,
         "commands": [
           {
@@ -480,7 +480,7 @@
             "custom"
           ],
           "default": "pro",
-          "description": "Assumed AI credit SKU for Budget estimates. Estimates only — not billing."
+          "description": "Assumed AI credit SKU for Budget estimates. Estimates only, not billing."
         },
         "cadence.customBudgetCredits": {
           "type": "number",

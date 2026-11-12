@@ -49,7 +49,7 @@ const NAV: NavGroup[] = [
     title: 'Observe',
     items: [
       { id: 'overview', label: 'Dashboard', icon: '▣' },
-      { id: 'sessions', label: 'Timeline', icon: '—', badge: 'sessions' },
+      { id: 'sessions', label: 'Timeline', icon: '☰', badge: 'sessions' },
       { id: 'moments', label: 'Moments', icon: '◎' },
     ],
   },
@@ -255,7 +255,7 @@ function practiceStatus(score: number): { label: string; color: string } {
 }
 
 function wowSpan(wowPct: number | null | undefined) {
-  if (wowPct == null) return html`<span class="wow flat">WoW —</span>`;
+  if (wowPct == null) return html`<span class="wow flat">WoW -</span>`;
   if (wowPct > 0) return html`<span class="wow up">WoW +${wowPct}%</span>`;
   if (wowPct < 0) return html`<span class="wow down">WoW ${wowPct}%</span>`;
   return html`<span class="wow flat">WoW 0%</span>`;
@@ -279,7 +279,7 @@ function shell(content: ReturnType<typeof html>) {
       <div class="brand">
         <div>
           <div class="brand-mark">Cadence<span>.</span></div>
-          <div class="brand-tag">${state.topPattern ? `Top: ${state.topPattern}` : 'Steady your AI practice'}</div>
+          <div class="brand-tag">${state.topPattern ? `Top: ${state.topPattern}` : 'Local session insights'}</div>
         </div>
         <button
           class="theme-toggle"
@@ -436,7 +436,7 @@ async function pageOverview() {
   const data = await query<any>('getOverview');
   state.badges = { ...(data.badges || {}) };
   state.topPattern = data.topPattern || null;
-  state.notice = data.sessions === 0 ? 'No sessions in range — enable Demo Mode or sync local harness logs.' : '';
+  state.notice = data.sessions === 0 ? 'No sessions in range. Enable Demo Mode or sync local harness logs.' : '';
 
   const activity = data.activity || [];
   const harnessEntries = Object.entries(data.byHarness || {}) as [string, number][];
@@ -549,8 +549,8 @@ async function pageSessions() {
               <tbody>
                 ${detail.requests.map(
                   (r: any) => html`<tr>
-                    <td class="mono">${r.timestamp ? new Date(r.timestamp).toLocaleString() : '—'}</td>
-                    <td>${r.modelId || '—'}</td>
+                    <td class="mono">${r.timestamp ? new Date(r.timestamp).toLocaleString() : '-'}</td>
+                    <td>${r.modelId || '-'}</td>
                     <td class="mono">${r.aiLoc}</td>
                     <td class="mono">${(r.toolsUsed || []).length}</td>
                     <td>${r.messageText}${r.isCanceled ? html` <span class="sev sev-high">canceled</span>` : null}</td>
@@ -569,7 +569,7 @@ async function pageSessions() {
   state.badges = { ...state.badges, sessions: rows.length };
   return html`
     <div class="page">
-      ${header('Timeline', 'Day overview or flat list — click a session for turn detail.', `${rows.length} sessions`)}
+      ${header('Timeline', 'Day overview or flat list. Click a session for turn detail.', `${rows.length} sessions`)}
       ${seg(
         [
           { id: 'day', label: 'By day' },
@@ -596,11 +596,11 @@ async function pageSessions() {
                       <tbody>
                         ${d.sessions.map(
                           (r: any) => html`<tr class="clickable" onClick=${() => { state.selectedSessionId = r.sessionId; void refresh(); }}>
-                            <td class="mono">${r.startedAt ? new Date(r.startedAt).toLocaleTimeString() : '—'}</td>
+                            <td class="mono">${r.startedAt ? new Date(r.startedAt).toLocaleTimeString() : '-'}</td>
                             <td>${r.workspaceName}</td>
                             <td>${r.harness}</td>
                             <td class="mono">${r.requestCount}</td>
-                            <td class="mono">${r.aiLoc ?? '—'}</td>
+                            <td class="mono">${r.aiLoc ?? '-'}</td>
                             <td>${r.title}</td>
                           </tr>`,
                         )}
@@ -617,11 +617,11 @@ async function pageSessions() {
                   ? html`<tr><td colspan="6" class="muted">No sessions in this filter.</td></tr>`
                   : rows.map(
                       (r) => html`<tr class="clickable" onClick=${() => { state.selectedSessionId = r.sessionId; void refresh(); }}>
-                        <td class="mono">${r.startedAt ? new Date(r.startedAt).toLocaleString() : '—'}</td>
+                        <td class="mono">${r.startedAt ? new Date(r.startedAt).toLocaleString() : '-'}</td>
                         <td>${r.workspaceName}</td>
                         <td>${r.harness}</td>
                         <td class="mono">${r.requestCount}</td>
-                        <td class="mono">${r.aiLoc ?? '—'}</td>
+                        <td class="mono">${r.aiLoc ?? '-'}</td>
                         <td>${r.title}</td>
                       </tr>`,
                     )}
@@ -636,7 +636,7 @@ async function pageMoments() {
   const rows = await query<any[]>('getMoments');
   return html`
     <div class="page">
-      ${header('Coding Moments', 'High-signal turns inferred from substantial AI edits — no screenshots required.')}
+      ${header('Coding Moments', 'Turns with substantial AI edits. No screenshots required.')}
       <div class="list panel">
         ${rows.length === 0
           ? html`<div class="empty"><h2>No moments yet</h2><p>Substantial AI edits will appear here once you code with an agent.</p></div>`
@@ -645,7 +645,7 @@ async function pageMoments() {
                 <div>
                   <strong>${m.workspaceName}</strong> · ${m.harness} · <span class="mono">${m.loc} LOC</span>
                 </div>
-                <span class="muted mono">${m.timestamp ? new Date(m.timestamp).toLocaleString() : '—'}</span>
+                <span class="muted mono">${m.timestamp ? new Date(m.timestamp).toLocaleString() : '-'}</span>
                 <div class="muted">${m.caption}</div>
               </article>`,
             )}
@@ -719,8 +719,8 @@ async function pageThroughput() {
 
   return html`
     <div class="page">
-      ${header('Output', 'Multi-mode code production — AI vs user, workspace, harness, model, language.', `${fmtLoc(data.summary.totalAiLoc)} AI LOC`)}
-      <div class="banner ok">Local LOC estimates from session transcripts — not billing data.</div>
+      ${header('Output', 'Code production by AI vs user, workspace, harness, model, and language.', `${fmtLoc(data.summary.totalAiLoc)} AI LOC`)}
+      <div class="banner ok">Local LOC estimates from session transcripts. Not billing data.</div>
       <div class="metric-row">
         <div class="metric"><div class="label">AI LOC</div><div class="value mono">${fmtLoc(data.summary.totalAiLoc)}</div></div>
         <div class="metric"><div class="label">User LOC</div><div class="value mono">${fmtLoc(data.summary.totalUserLoc)}</div></div>
@@ -773,7 +773,7 @@ async function pageBudget() {
   ]);
   return html`
     <div class="page">
-      ${header('Burndown', 'Local credit and token estimates for the selected range — always on.', `${data.pct}% used`)}
+      ${header('Burndown', 'Local credit and token estimates for the selected range. Always on.', `${data.pct}% used`)}
       <div class="banner">${data.disclaimer}</div>
       <div class="metric-row">
         <div class="metric"><div class="label">Credits used</div><div class="value mono">${data.creditsUsed}</div></div>
@@ -840,7 +840,7 @@ async function pageRhythm() {
       <div class="metric-row">
         <div class="metric"><div class="label">Late-night</div><div class="value mono">${Math.round(data.lateNightRatio * 100)}%</div></div>
         <div class="metric"><div class="label">Weekend</div><div class="value mono">${Math.round(data.weekendRatio * 100)}%</div></div>
-        <div class="metric"><div class="label">Peak hour</div><div class="value mono">${data.peakHour != null ? `${data.peakHour}:00` : '—'}</div></div>
+        <div class="metric"><div class="label">Peak hour</div><div class="value mono">${data.peakHour != null ? `${data.peakHour}:00` : '-'}</div></div>
         <div class="metric"><div class="label">Balance</div><div class="value mono">${data.balanceScore}</div></div>
       </div>
       ${seg(
@@ -1045,7 +1045,7 @@ async function pageHabits() {
                     <td>${f.group}</td>
                     <td><span class=${`sev sev-${f.severity}`}>${f.severity}</span></td>
                     <td>${f.triggered ? f.message : html`<span class="muted">Clear</span>`}</td>
-                    <td class="muted">${f.triggered ? f.improvement : '—'}</td>
+                    <td class="muted">${f.triggered ? f.improvement : '-'}</td>
                   </tr>`,
                 )}
               </tbody>
@@ -1217,7 +1217,7 @@ async function pageLab() {
 
   const view = () => html`
     <div class="page">
-      ${header('Signal Lab', 'Safe predicates over live request fields — explore before promoting to SignalSpec.')}
+      ${header('Signal Lab', 'Safe predicates over live request fields. Explore before promoting to a SignalSpec.')}
       <div class="grid-2">
         <section class="panel">
           <label class="muted">Expression</label>
@@ -1486,7 +1486,7 @@ async function pagePractice() {
         <section class="panel">
           <h2>Quiz ${answered ? `· ${score}/${answered} correct` : ''}</h2>
           ${!q
-            ? html`<p class="muted">No quiz items for this range — keep coding and reload.</p>`
+            ? html`<p class="muted">No quiz items for this range. Keep coding and reload.</p>`
             : html`
                 <p><strong>${q.prompt}</strong></p>
                 <div class="list" style="margin-top:.75rem">
@@ -1521,7 +1521,7 @@ async function pageMarks() {
   const data = await query<any>('getAchievements');
   return html`
     <div class="page">
-      ${header('Achievements', 'Optional badges for consistency — coaching lives on Dashboard and Anti-Patterns.', data.tier)}
+      ${header('Achievements', 'Optional badges for consistency. Coaching lives on Dashboard and Anti-Patterns.', data.tier)}
       <div class="metric-row">
         <div class="metric"><div class="label">XP</div><div class="value mono">${data.xp}</div></div>
         <div class="metric"><div class="label">Tier</div><div class="value">${data.tier}</div></div>

@@ -143,7 +143,7 @@ export function ingestAll(options?: {
         ...errors,
         {
           source: 'discover',
-          message: 'No local AI session logs found. Showing demo fixtures — connect a harness or toggle Cadence: demo mode.',
+          message: 'No local AI session logs found. Showing demo fixtures. Connect a harness or toggle Cadence demo mode.',
         },
       ],
     };
