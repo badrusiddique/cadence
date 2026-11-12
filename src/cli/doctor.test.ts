@@ -6,6 +6,12 @@ describe('doctor', () => {
     const report = runDoctor();
     expect(report.home).toBeTruthy();
     expect(report.totals).toBeTypeOf('object');
+    expect(report.chatSessionFiles).toEqual(
+      expect.objectContaining({
+        json: expect.any(Number),
+        jsonl: expect.any(Number),
+      }),
+    );
     expect(report.evidence.state).toBe('observed');
     expect(Array.isArray(report.recommendations)).toBe(true);
     expect(report.enterprise.rpcAllowlistSize).toBeGreaterThan(20);

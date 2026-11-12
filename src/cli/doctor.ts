@@ -2,6 +2,7 @@ import { discoverSources, hasAnySources } from '../ingest/discover';
 import { homeDir, trustedRoots } from '../ingest/paths';
 import { DEFAULT_INGEST_LIMITS } from '../ingest/limits';
 import { RPC_ALLOWLIST } from '../host/rpc-guard';
+import { countChatSessionFiles } from '../ingest/harnesses/vscode';
 
 export interface DoctorReport {
   ok: boolean;
@@ -9,6 +10,8 @@ export interface DoctorReport {
   home: string;
   sources: ReturnType<typeof discoverSources>;
   totals: Record<string, number>;
+  /** Counts of VS Code chatSessions files (json + jsonl) under discovered workspaceStorage. */
+  chatSessionFiles: { json: number; jsonl: number };
   recommendations: string[];
   enterprise: {
     trustedRoots: number;
@@ -27,6 +30,7 @@ export interface DoctorReport {
 export function runDoctor(): DoctorReport {
   const sources = discoverSources();
   const totals = Object.fromEntries(Object.entries(sources).map(([k, v]) => [k, v.length]));
+  const chatSessionFiles = countChatSessionFiles(sources.vscode);
   const any = hasAnySources(sources);
   const recommendations: string[] = [];
 
@@ -39,6 +43,11 @@ export function runDoctor(): DoctorReport {
   if (totals.cursor === 0) {
     recommendations.push(
       'Cursor transcripts not detected under ~/.cursor/projects — also check Composer state.vscdb under Cursor/User/globalStorage (Local Agent/Composer chats).',
+    );
+  }
+  if (totals.vscode > 0 && chatSessionFiles.json === 0 && chatSessionFiles.jsonl === 0) {
+    recommendations.push(
+      'VS Code workspaceStorage found but no chatSessions .json/.jsonl files yet — open Copilot Chat once, or check emptyWindowChatSessions under User/globalStorage.',
     );
   }
   if (totals.claude === 0 && totals.codex === 0 && totals.vscode === 0) {
@@ -56,6 +65,7 @@ export function runDoctor(): DoctorReport {
     home: homeDir(),
     sources,
     totals,
+    chatSessionFiles,
     recommendations,
     enterprise: {
       trustedRoots: trustedRoots().length,

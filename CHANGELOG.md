@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.2.7 (2026-11-12)
+
+Load real VS Code / GitHub Copilot Chat sessions from modern `.jsonl` append logs.
+
+- Accept `.json` and `.jsonl` under `workspaceStorage/<hash>/chatSessions/` (VS Code ≥1.109)
+- Rebuild append-log sessions (`kind:0` base + `kind:2` `requests` patches)
+- Also ingest `GitHub.copilot-chat/transcripts/*.jsonl`, `emptyWindowChatSessions`, and `transferredChatSessions`
+- Discover host User dir from extension `globalStorageUri` (portable / `--user-data-dir`)
+- Doctor reports chatSessions `.json` / `.jsonl` file counts
+
 ## 1.2.6 (2026-11-12)
 
 Skip non-Cursor `state.vscdb` files that lack `cursorDiskKV` instead of aborting the whole Composer ingest batch.

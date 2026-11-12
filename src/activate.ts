@@ -230,15 +230,19 @@ async function reload(context: vscode.ExtensionContext, openPanel = false, bustC
         probeComposerDatabases,
         userDirFromExtensionStorage,
       } = await import('./ingest/harnesses/cursor-composer');
+      const { findVsCodeUserDirs } = await import('./ingest/harnesses/vscode');
 
       const hostUserDir = userDirFromExtensionStorage(context.globalStorageUri.fsPath);
       const userDirs = findCursorUserDirs([hostUserDir]);
+      const vscodeUserDirs = findVsCodeUserDirs([hostUserDir]);
       log.info('cursor user dirs', { hostUserDir, userDirs });
+      log.info('vscode user dirs', { hostUserDir, vscodeUserDirs });
 
       const result = ingestAll({
         demoMode: ent.demoMode,
         useCache: !bustCache && !ent.demoMode,
         cursorUserDirs: userDirs,
+        vscodeUserDirs,
         limits: {
           maxSessions: ent.maxSessions,
           maxFilesPerWalk: ent.maxFilesPerWalk,

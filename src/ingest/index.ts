@@ -6,11 +6,16 @@ import { parseCopilotCliSessions } from './harnesses/copilot-cli';
 import { parseCursorSessions } from './harnesses/cursor';
 import { findCursorUserDirs, loadCursorComposerSessions } from './harnesses/cursor-composer';
 import { parseOpenCodeSessions } from './harnesses/opencode';
-import { parseVsCodeSessions } from './harnesses/vscode';
+import {
+  findVsCodeUserDirs,
+  parseVsCodeGlobalChatSessions,
+  parseVsCodeSessions,
+} from './harnesses/vscode';
 import { buildFixtureSessions } from './fixtures';
 import { readIngestCache, writeIngestCache } from './cache';
 import { resolveIngestLimits, truncateSessions, type IngestLimits } from './limits';
 import * as path from 'path';
+import { existsDir } from './paths';
 
 export type ProgressFn = (update: { phase: string; detail?: string; ratio?: number }) => void;
 
@@ -36,6 +41,8 @@ export function ingestAll(options?: {
   limits?: Partial<IngestLimits>;
   /** Live / portable Cursor User dirs (e.g. from extension globalStorageUri). */
   cursorUserDirs?: string[];
+  /** Live / portable VS Code-family User dirs (e.g. from extension globalStorageUri). */
+  vscodeUserDirs?: string[];
 }): IngestResult {
   const limits = resolveIngestLimits(options?.limits);
 
@@ -83,8 +90,25 @@ export function ingestAll(options?: {
     {
       name: 'VS Code / Cursor storage',
       run: () => {
-        sourcePaths.push(...sources.vscode);
-        return parseVsCodeSessions(sources.vscode);
+        // When vscodeUserDirs is provided (including []), use it as the exact list —
+        // do not re-merge with default discovery (mirrors cursorUserDirs).
+        const userDirs =
+          options?.vscodeUserDirs !== undefined ? options.vscodeUserDirs : findVsCodeUserDirs();
+        const vscodeRoots =
+          options?.vscodeUserDirs !== undefined
+            ? userDirs
+                .map((d) => path.join(d, 'workspaceStorage'))
+                .filter((d) => existsDir(d))
+            : sources.vscode;
+        sourcePaths.push(...vscodeRoots);
+        for (const d of userDirs) {
+          sourcePaths.push(path.join(d, 'globalStorage', 'emptyWindowChatSessions'));
+          sourcePaths.push(path.join(d, 'globalStorage', 'transferredChatSessions'));
+        }
+        return [
+          ...parseVsCodeSessions(vscodeRoots),
+          ...parseVsCodeGlobalChatSessions(userDirs),
+        ];
       },
     },
     {
