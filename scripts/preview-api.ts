@@ -1,5 +1,6 @@
 import { Analyzer } from '../src/analyze/analyzer';
 import { buildFixtureSessions } from '../src/ingest/fixtures';
+import { loadCursorComposerSessions } from '../src/ingest/harnesses/cursor-composer';
 import { BUILTIN_SIGNALS } from '../src/signals/catalog';
 import { builtinSignalTemplate, listSignalCatalog } from '../src/signals/loader';
 import { parseSignalMarkdown } from '../src/signals/engine';
@@ -7,6 +8,12 @@ import { getPending } from '../src/signals/trust';
 import type { Workspace } from '../src/domain/types';
 
 const sessions = buildFixtureSessions();
+// Also pull Composer DB sessions when present (e.g. local Cursor state.vscdb)
+try {
+  for (const s of loadCursorComposerSessions()) sessions.push(s);
+} catch {
+  /* preview still works on fixtures alone */
+}
 const workspaces = new Map<string, Workspace>();
 for (const s of sessions) {
   if (!workspaces.has(s.workspaceId)) {
