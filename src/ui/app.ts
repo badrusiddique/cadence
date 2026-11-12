@@ -474,7 +474,7 @@ async function pageOverview() {
           <div class="empty">
             <h2>No sessions on this machine yet</h2>
             <p>Cadence does not invent sample workspaces unless you turn on <strong>cadence.demoMode</strong>.</p>
-            <p class="muted">In Cursor, Local Agent chats are read from Composer storage (<span class="mono">state.vscdb</span>). Use an Agent chat here, then <strong>Cadence: Reload Sessions</strong>.</p>
+            <p class="muted">Cloud Agent chats on cursor.com are not on this machine. Use desktop Cursor Agent/Composer chats (stored in <span class="mono">state.vscdb</span>), then <strong>Cadence: Reload Sessions</strong>.</p>
           </div>
         </section>
       </div>

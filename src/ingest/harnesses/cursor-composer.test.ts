@@ -2,9 +2,13 @@ import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { composerToSession, loadCursorComposerSessions } from './cursor-composer';
+import { composerToSession, decodeKvValue, loadCursorComposerSessions } from './cursor-composer';
 
 const fixtureRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'cadence-composer-'));
+
+function utf8JsonBlob(value: unknown): Uint8Array {
+  return Uint8Array.from(Buffer.from(JSON.stringify(value), 'utf8'));
+}
 
 beforeAll(async () => {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -13,7 +17,8 @@ beforeAll(async () => {
     locateFile: (file: string) => path.join(process.cwd(), 'node_modules/sql.js/dist', file),
   });
   const db = new SQL.Database();
-  db.run('CREATE TABLE cursorDiskKV (key TEXT, value TEXT)');
+  // Cursor stores cursorDiskKV.value as BLOB (UTF-8 JSON bytes), not TEXT.
+  db.run('CREATE TABLE cursorDiskKV (key TEXT, value BLOB)');
   const meta = {
     composerId: 'abc-123',
     name: 'Summary request',
@@ -28,15 +33,15 @@ beforeAll(async () => {
   };
   db.run('INSERT INTO cursorDiskKV VALUES (?, ?)', [
     'composerData:abc-123',
-    JSON.stringify(meta),
+    utf8JsonBlob(meta),
   ]);
   db.run('INSERT INTO cursorDiskKV VALUES (?, ?)', [
     'bubbleId:abc-123:b1',
-    JSON.stringify({ text: 'give me a summary', type: 1, createdAt: 1_700_000_000_000 }),
+    utf8JsonBlob({ text: 'give me a summary', type: 1, createdAt: 1_700_000_000_000 }),
   ]);
   db.run('INSERT INTO cursorDiskKV VALUES (?, ?)', [
     'bubbleId:abc-123:b2',
-    JSON.stringify({ text: 'Cadence is local-first', type: 2, createdAt: 1_700_000_001_000 }),
+    utf8JsonBlob({ text: 'Cadence is local-first', type: 2, createdAt: 1_700_000_001_000 }),
   ]);
   const outDir = path.join(fixtureRoot, 'globalStorage');
   fs.mkdirSync(outDir, { recursive: true });
@@ -72,6 +77,32 @@ describe('Cursor Composer DB', () => {
     expect(session?.requests[0].messageText).toBe('hello');
     expect(session?.requests[0].responseText).toBe('world');
     expect(session?.harness).toBe('Cursor');
+  });
+
+  it('falls back to meta.conversation when fullConversationHeadersOnly is absent', () => {
+    const bubbles = new Map<string, Record<string, unknown>>();
+    const session = composerToSession(
+      'id-2',
+      {
+        name: 'Conversation fallback',
+        unifiedMode: 'agent',
+        createdAt: 20,
+        conversation: [
+          { bubbleId: 'c1', type: 1, text: 'ping' },
+          { bubbleId: 'c2', type: 2, text: 'pong' },
+        ],
+        conversationMap: {},
+      },
+      bubbles,
+    );
+    expect(session?.requests).toHaveLength(1);
+    expect(session?.requests[0].messageText).toBe('ping');
+    expect(session?.requests[0].responseText).toBe('pong');
+  });
+
+  it('decodeKvValue turns Buffer JSON into a parseable string', () => {
+    const raw = decodeKvValue(Buffer.from(JSON.stringify({ a: 1 })));
+    expect(JSON.parse(raw)).toEqual({ a: 1 });
   });
 
   it('reads a real state.vscdb fixture (verified before release)', () => {

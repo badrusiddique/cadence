@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.2.4 (2026-11-12)
+
+Fix Cursor Local Agent ingest when `cursorDiskKV.value` is BLOB.
+
+- Decode Buffer/Uint8Array/ArrayBuffer KV values as UTF-8 JSON before parse (String(blob) was garbage)
+- Fall back to `meta.conversation` when `fullConversationHeadersOnly` is absent
+- Clearer empty-state + doctor hints for desktop Composer `state.vscdb` vs Cloud Agent chats
+
 ## 1.2.3 (2026-11-12)
 
 Read real Cursor Local Agent chats from Composer `state.vscdb`.

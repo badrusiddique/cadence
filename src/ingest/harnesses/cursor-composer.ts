@@ -39,6 +39,19 @@ function snapshotDb(dbPath: string): string | null {
   }
 }
 
+/** Decode cursorDiskKV.value — Cursor stores UTF-8 JSON as BLOB, not TEXT. */
+export function decodeKvValue(value: unknown): string {
+  if (typeof value === 'string') return value;
+  if (Buffer.isBuffer(value)) return value.toString('utf8');
+  if (value instanceof Uint8Array) return Buffer.from(value).toString('utf8');
+  if (value instanceof ArrayBuffer) return Buffer.from(new Uint8Array(value)).toString('utf8');
+  if (ArrayBuffer.isView(value)) {
+    const view = value as ArrayBufferView;
+    return Buffer.from(view.buffer, view.byteOffset, view.byteLength).toString('utf8');
+  }
+  return String(value ?? '');
+}
+
 function parseJson(raw: string): Record<string, unknown> | null {
   try {
     const v = JSON.parse(raw);
@@ -75,7 +88,11 @@ export function composerToSession(
   meta: Record<string, unknown>,
   bubbles: Map<string, Record<string, unknown>>,
 ): Session | null {
-  const headers = (meta.fullConversationHeadersOnly as Array<Record<string, unknown>> | undefined) || [];
+  const headerList = Array.isArray(meta.fullConversationHeadersOnly)
+    ? (meta.fullConversationHeadersOnly as Array<Record<string, unknown>>)
+    : Array.isArray(meta.conversation)
+      ? (meta.conversation as Array<Record<string, unknown>>)
+      : [];
   const map = (meta.conversationMap as Record<string, Record<string, unknown>> | undefined) || {};
   const modelConfig = meta.modelConfig as { modelName?: string } | undefined;
   const model = typeof modelConfig?.modelName === 'string' ? modelConfig.modelName : '';
@@ -87,10 +104,11 @@ export function composerToSession(
   const requests = [];
   let pending: { text: string; ts: number | null } | null = null;
 
-  for (const header of headers) {
+  for (const header of headerList) {
     const bubbleId = String(header.bubbleId || '');
     const type = Number(header.type);
-    const bubble = bubbles.get(bubbleId) || map[bubbleId] || {};
+    // Prefer dedicated bubble rows / conversationMap; conversation entries may embed text.
+    const bubble = bubbles.get(bubbleId) || map[bubbleId] || header;
     const text = bubbleText(bubble);
     const createdAt = bubble.createdAt != null ? Number(bubble.createdAt) : null;
     const ts = Number.isFinite(createdAt) ? createdAt : null;
@@ -171,7 +189,7 @@ export function composerToSession(
   });
 }
 
-type KvRow = { key: string; value: string };
+type KvRow = { key: string; value: unknown };
 
 function sessionsFromKvRows(composerRows: KvRow[], allBubbleRows: KvRow[]): Session[] {
   const sessions: Session[] = [];
@@ -182,7 +200,7 @@ function sessionsFromKvRows(composerRows: KvRow[], allBubbleRows: KvRow[]): Sess
     if (parts.length < 3) continue;
     const composerId = parts[1];
     const bubbleId = parts.slice(2).join(':');
-    const parsed = parseJson(String(b.value));
+    const parsed = parseJson(decodeKvValue(b.value));
     if (!parsed) continue;
     if (!bubblesByComposer.has(composerId)) bubblesByComposer.set(composerId, new Map());
     bubblesByComposer.get(composerId)!.set(bubbleId, parsed);
@@ -191,7 +209,7 @@ function sessionsFromKvRows(composerRows: KvRow[], allBubbleRows: KvRow[]): Sess
   for (const row of composerRows) {
     const composerId = String(row.key).replace(/^composerData:/, '');
     if (!composerId || composerId.includes('/')) continue;
-    const meta = parseJson(String(row.value));
+    const meta = parseJson(decodeKvValue(row.value));
     if (!meta) continue;
     const session = composerToSession(composerId, meta, bubblesByComposer.get(composerId) || new Map());
     if (session) sessions.push(session);
@@ -253,10 +271,10 @@ async function loadWithSqlJs(userDirs: string[]): Promise<Session[]> {
       const composers: KvRow[] = [];
       const bubbles: KvRow[] = [];
       for (const table of db.exec(`SELECT key, value FROM cursorDiskKV WHERE key LIKE 'composerData:%'`)) {
-        for (const row of table.values) composers.push({ key: String(row[0]), value: String(row[1]) });
+        for (const row of table.values) composers.push({ key: String(row[0]), value: row[1] });
       }
       for (const table of db.exec(`SELECT key, value FROM cursorDiskKV WHERE key LIKE 'bubbleId:%'`)) {
-        for (const row of table.values) bubbles.push({ key: String(row[0]), value: String(row[1]) });
+        for (const row of table.values) bubbles.push({ key: String(row[0]), value: row[1] });
       }
       sessions.push(...sessionsFromKvRows(composers, bubbles));
     } finally {

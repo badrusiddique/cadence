@@ -37,7 +37,9 @@ export function runDoctor(): DoctorReport {
     );
   }
   if (totals.cursor === 0) {
-    recommendations.push('Cursor transcripts not detected under ~/.cursor/projects — optional gap fill vs older coaches.');
+    recommendations.push(
+      'Cursor transcripts not detected under ~/.cursor/projects — also check Composer state.vscdb under Cursor/User/globalStorage (Local Agent/Composer chats).',
+    );
   }
   if (totals.claude === 0 && totals.codex === 0 && totals.vscode === 0) {
     recommendations.push('Run Cadence with --demo for fixture-backed overview while you generate real sessions.');
