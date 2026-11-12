@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.2.2 (2026-11-12)
+
+Cursor local Agent transcripts actually parse again.
+
+- Read modern `agent-transcripts/<uuid>/<uuid>.jsonl` rows with `message.content` text/tool blocks
+- Prefer transcript folders over scanning the whole project dump
+- Regression test for nested Cursor JSONL layout
+
 ## 1.2.1 (2026-11-12)
 
 Empty install no longer looks like fake workspaces.
