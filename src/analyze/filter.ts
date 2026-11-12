@@ -32,6 +32,8 @@ export function allRequests(sessions: Session[]): Array<SessionRequest & { sessi
 }
 
 export function dayKey(ts: number | null): string {
-  if (ts == null) return 'unknown';
-  return new Date(ts).toISOString().slice(0, 10);
+  if (ts == null || !Number.isFinite(ts)) return 'unknown';
+  const d = new Date(ts);
+  if (Number.isNaN(d.getTime())) return 'unknown';
+  return d.toISOString().slice(0, 10);
 }

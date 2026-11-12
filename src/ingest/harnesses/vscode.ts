@@ -155,8 +155,16 @@ function parseChatSessionObject(
         toolsUsed: tools,
         isCanceled: Boolean(req.isCanceled || req.canceled),
         endState: req.isCanceled ? 'canceled' : 'completed',
-        promptTokens: num(req.promptTokens ?? req.metadata?.promptTokens),
-        completionTokens: num(req.completionTokens ?? req.metadata?.outputTokens),
+        promptTokens: num(req.promptTokens ?? req.metadata?.promptTokens ?? req.tokenUsage?.promptTokens),
+        completionTokens: num(
+          req.completionTokens ?? req.metadata?.outputTokens ?? req.tokenUsage?.completionTokens,
+        ),
+        cacheReadTokens: num(req.cacheReadTokens ?? req.metadata?.cacheReadTokens ?? req.tokenUsage?.cacheReadTokens),
+        cacheWriteTokens: num(
+          req.cacheWriteTokens ?? req.metadata?.cacheWriteTokens ?? req.tokenUsage?.cacheWriteTokens,
+        ),
+        billedCredits: billedCreditsFrom(req),
+        premiumRequests: num(req.premiumRequests ?? req.metadata?.premiumRequests),
         workType: classifyWorkType(messageText),
         slashCommand: String(req.slashCommand || ''),
         skillsUsed: Array.isArray(req.skills) ? req.skills.map(String) : [],
@@ -213,6 +221,20 @@ export function parseChatSessionJsonl(
 
 function num(v: unknown): number | null {
   return typeof v === 'number' && Number.isFinite(v) ? v : null;
+}
+
+/** Copilot Chat may log credits directly or as nano AIU (1e9 = 1 credit). */
+function billedCreditsFrom(req: any): number | null {
+  const credits = num(req.copilotCredits ?? req.metadata?.copilotCredits ?? req.billedCredits);
+  if (credits != null && credits > 0) return credits;
+  const nano = num(
+    req.copilotUsageNanoAiu ??
+      req.metadata?.copilotUsageNanoAiu ??
+      req.totalNanoAiu ??
+      req.metadata?.totalNanoAiu,
+  );
+  if (nano != null && nano > 0) return nano / 1_000_000_000;
+  return null;
 }
 
 function extractUserText(req: any): string {

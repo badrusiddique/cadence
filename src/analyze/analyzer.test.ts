@@ -33,7 +33,19 @@ describe('Analyzer', () => {
   it('computes budget estimates with disclaimer', () => {
     const budget = makeAnalyzer().getBudget();
     expect(budget.creditsUsed).toBeGreaterThan(0);
-    expect(budget.disclaimer).toMatch(/estimates/i);
+    expect(budget.disclaimer).toMatch(/not a subscription invoice/i);
+  });
+
+  it('exposes spend ledger breakdowns and provenance', () => {
+    const spend = makeAnalyzer().getBudget({}, 'business');
+    expect(spend.budget).toBe(1900);
+    expect(spend.byHarness.length).toBeGreaterThan(0);
+    expect(spend.byRepo.length).toBeGreaterThan(0);
+    expect(spend.daily[0]).toHaveProperty('usd');
+    expect(spend.cacheEconomics).toHaveProperty('netUsd');
+    expect(spend.provenanceCounts).toHaveProperty('estimated');
+    expect(spend.forecast).toHaveProperty('usd');
+    expect(spend.usdEstimate).toBeGreaterThan(0);
   });
 
   it('evaluates built-in habit signals', () => {

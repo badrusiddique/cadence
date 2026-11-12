@@ -1,4 +1,5 @@
-import { PRACTICE_LABELS, SKU_AI_CREDITS, modelMultiplier, tokenRateFor } from '../domain/constants';
+import { PRACTICE_LABELS, SKU_AI_CREDITS } from '../domain/constants';
+import { priceRequest, type CostProvenance } from '../domain/pricing';
 import type {
   DailyActivity,
   DateFilter,
@@ -387,37 +388,90 @@ export class Analyzer {
   }
 
   getBudget(filter: DateFilter = {}, sku = 'pro', customCredits = 1000) {
-    const requests = allRequests(this.scoped(filter));
+    const sessions = this.scoped(filter);
+    const requests = allRequests(sessions);
     let credits = 0;
     let usd = 0;
-    const daily: Record<string, number> = {};
-    const byModel: Record<string, { credits: number; usd: number; requests: number }> = {};
+    let cacheSavedUsd = 0;
+    let cacheWriteUsd = 0;
+    let cacheReadUsd = 0;
+    const daily: Record<string, { credits: number; usd: number }> = {};
+    const byModel: Record<string, { credits: number; usd: number; requests: number; estimated: number }> = {};
+    const byHarness: Record<string, { credits: number; usd: number; requests: number; estimated: number }> = {};
+    const byRepo: Record<string, { credits: number; usd: number; requests: number; estimated: number }> = {};
+    const provenanceCounts: Record<CostProvenance, number> = {
+      billed: 0,
+      'token-priced': 0,
+      estimated: 0,
+    };
 
     for (const r of requests) {
-      const mult = modelMultiplier(r.modelId || 'auto');
-      const requestCredits = mult;
-      credits += requestCredits;
-      const rate = tokenRateFor(r.modelId || '');
-      const input = r.promptTokens || 0;
-      const output = r.completionTokens || 0;
-      const cached = r.cacheReadTokens || 0;
-      const write = r.cacheWriteTokens || 0;
-      const cost =
-        (input / 1e6) * rate.input +
-        (cached / 1e6) * rate.cached +
-        (output / 1e6) * rate.output +
-        (write / 1e6) * (rate.cacheWrite || rate.input);
-      usd += cost;
+      const priced = priceRequest(r);
+      credits += priced.credits;
+      usd += priced.usd;
+      cacheSavedUsd += priced.cacheSavedUsd;
+      cacheWriteUsd += priced.cacheWriteUsd;
+      cacheReadUsd += priced.cacheReadUsd;
+      provenanceCounts[priced.provenance] += 1;
+
       const d = dayKey(r.timestamp);
-      if (d !== 'unknown') daily[d] = (daily[d] || 0) + requestCredits;
+      if (d !== 'unknown') {
+        if (!daily[d]) daily[d] = { credits: 0, usd: 0 };
+        daily[d].credits += priced.credits;
+        daily[d].usd += priced.usd;
+      }
+
       const model = r.modelId || 'unknown';
-      if (!byModel[model]) byModel[model] = { credits: 0, usd: 0, requests: 0 };
-      byModel[model].credits += requestCredits;
-      byModel[model].usd += cost;
+      if (!byModel[model]) byModel[model] = { credits: 0, usd: 0, requests: 0, estimated: 0 };
+      byModel[model].credits += priced.credits;
+      byModel[model].usd += priced.usd;
       byModel[model].requests += 1;
+      if (priced.provenance === 'estimated') byModel[model].estimated += 1;
+
+      const harness = r.session.harness || 'unknown';
+      if (!byHarness[harness]) byHarness[harness] = { credits: 0, usd: 0, requests: 0, estimated: 0 };
+      byHarness[harness].credits += priced.credits;
+      byHarness[harness].usd += priced.usd;
+      byHarness[harness].requests += 1;
+      if (priced.provenance === 'estimated') byHarness[harness].estimated += 1;
+
+      const repo = r.session.workspaceName || r.session.workspaceId || 'unknown';
+      if (!byRepo[repo]) byRepo[repo] = { credits: 0, usd: 0, requests: 0, estimated: 0 };
+      byRepo[repo].credits += priced.credits;
+      byRepo[repo].usd += priced.usd;
+      byRepo[repo].requests += 1;
+      if (priced.provenance === 'estimated') byRepo[repo].estimated += 1;
     }
 
     const budget = sku === 'custom' ? customCredits : SKU_AI_CREDITS[sku] || SKU_AI_CREDITS.pro;
+    const estimatedShare =
+      requests.length === 0 ? 0 : Number(((provenanceCounts.estimated / requests.length) * 100).toFixed(1));
+
+    // Linear end-of-month forecast from month-to-date burn (UTC calendar month).
+    const now = new Date();
+    const dayOfMonth = now.getUTCDate();
+    const daysInMonth = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 0)).getUTCDate();
+    const forecastCredits =
+      dayOfMonth > 0 ? Number(((credits / dayOfMonth) * daysInMonth).toFixed(2)) : Number(credits.toFixed(2));
+    const forecastUsd =
+      dayOfMonth > 0 ? Number(((usd / dayOfMonth) * daysInMonth).toFixed(4)) : Number(usd.toFixed(4));
+    const runOutDay =
+      budget > 0 && credits > 0
+        ? Math.min(daysInMonth, Math.ceil((budget * dayOfMonth) / credits))
+        : null;
+
+    const sortRows = (rows: Record<string, { credits: number; usd: number; requests: number; estimated: number }>) =>
+      Object.entries(rows)
+        .map(([key, v]) => ({
+          key,
+          credits: Number(v.credits.toFixed(4)),
+          usd: Number(v.usd.toFixed(6)),
+          requests: v.requests,
+          estimated: v.estimated,
+          est: v.estimated > 0,
+        }))
+        .sort((a, b) => b.usd - a.usd);
+
     return {
       creditsUsed: Number(credits.toFixed(2)),
       usdEstimate: Number(usd.toFixed(4)),
@@ -425,10 +479,41 @@ export class Analyzer {
       remaining: Number((budget - credits).toFixed(2)),
       pct: budget ? Number(((credits / budget) * 100).toFixed(1)) : 0,
       daily: Object.entries(daily)
-        .map(([date, value]) => ({ date, credits: value }))
+        .map(([date, value]) => ({
+          date,
+          credits: Number(value.credits.toFixed(4)),
+          usd: Number(value.usd.toFixed(6)),
+        }))
         .sort((a, b) => a.date.localeCompare(b.date)),
-      byModel,
-      disclaimer: 'Local estimates only. Do not use for billing reconciliation.',
+      byModel: Object.fromEntries(
+        Object.entries(byModel).map(([k, v]) => [
+          k,
+          {
+            credits: Number(v.credits.toFixed(4)),
+            usd: Number(v.usd.toFixed(6)),
+            requests: v.requests,
+            estimated: v.estimated,
+          },
+        ]),
+      ),
+      byHarness: sortRows(byHarness),
+      byRepo: sortRows(byRepo).slice(0, 50),
+      cacheEconomics: {
+        savedOnCacheReadsUsd: Number(cacheSavedUsd.toFixed(4)),
+        paidForCacheWritesUsd: Number(cacheWriteUsd.toFixed(4)),
+        cacheReadUsd: Number(cacheReadUsd.toFixed(4)),
+        netUsd: Number((cacheSavedUsd - cacheWriteUsd).toFixed(4)),
+      },
+      provenanceCounts,
+      estimatedShare,
+      forecast: {
+        credits: forecastCredits,
+        usd: forecastUsd,
+        runOutDay,
+        daysInMonth,
+      },
+      disclaimer:
+        'Local spend ledger (billed units when present, else tokens×rate, else ~est). Not a subscription invoice — provider billing remains source of truth.',
     };
   }
 

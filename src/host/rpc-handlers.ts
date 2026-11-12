@@ -53,8 +53,14 @@ export async function handleRpc(
       return a.getMoments(filter);
     case 'getThroughput':
       return a.getThroughput(filter);
-    case 'getBudget':
-      return a.getBudget(filter);
+    case 'getBudget': {
+      const sku = typeof params.sku === 'string' ? params.sku : undefined;
+      const custom =
+        typeof params.customCredits === 'number' && Number.isFinite(params.customCredits)
+          ? params.customCredits
+          : undefined;
+      return a.getBudget(filter, sku || 'business', custom ?? 1900);
+    }
     case 'getRhythm':
       return a.getRhythm(filter);
     case 'getInquiry':

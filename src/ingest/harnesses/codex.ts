@@ -53,12 +53,19 @@ function parseCodexFile(filePath: string, editLocIndex: EditLocIndex): Session |
   let responseParts: string[] = [];
   const modelId = 'codex';
   let reqIndex = 0;
+  let currentModel = modelId;
+  let pendingUsage: {
+    promptTokens: number;
+    completionTokens: number;
+    cacheReadTokens: number;
+  } | null = null;
   const pendingPatches = new Map<string, Array<{ file: string; added: number }>>();
 
   const flush = () => {
     if (!pendingUser) return;
     const messageText = pendingUser.text;
     const responseText = responseParts.join('\n');
+    const usage = pendingUsage;
     requests.push(
       emptyRequest({
         requestId: `${sessionId}:${reqIndex}`,
@@ -67,12 +74,15 @@ function parseCodexFile(filePath: string, editLocIndex: EditLocIndex): Session |
         responseText,
         messageLength: messageText.length,
         responseLength: responseText.length,
-        modelId,
+        modelId: currentModel,
         agentName: 'Codex CLI',
         agentMode: 'agent',
         toolsUsed: [...tools],
         editedFiles: [...edited],
         workType: classifyWorkType(messageText),
+        promptTokens: usage?.promptTokens ?? null,
+        completionTokens: usage?.completionTokens ?? null,
+        cacheReadTokens: usage?.cacheReadTokens ?? null,
         aiCode: edited.map((fp) => ({
           language: detectLanguage(fp),
           lineCount: editLocIndex.get(`${sessionId}:codex:${reqIndex}`)?.get(fp)?.added ?? 0,
@@ -87,6 +97,7 @@ function parseCodexFile(filePath: string, editLocIndex: EditLocIndex): Session |
     tools = [];
     edited = [];
     responseParts = [];
+    pendingUsage = null;
   };
 
   for (const row of rows) {
@@ -96,7 +107,40 @@ function parseCodexFile(filePath: string, editLocIndex: EditLocIndex): Session |
 
     if (r.type === 'session_meta') {
       if (typeof payload.id === 'string') sessionId = payload.id;
+      if (typeof payload.session_id === 'string') sessionId = payload.session_id;
       if (typeof payload.cwd === 'string') cwd = payload.cwd;
+      continue;
+    }
+
+    if (r.type === 'turn_context') {
+      if (typeof payload.model === 'string') currentModel = payload.model;
+      if (typeof payload.cwd === 'string') cwd = payload.cwd;
+      continue;
+    }
+
+    if (r.type === 'event_msg' && payload.type === 'token_count') {
+      const info = (payload.info || {}) as Record<string, unknown>;
+      const last = (info.last_token_usage || {}) as Record<string, number>;
+      const input = typeof last.input_tokens === 'number' ? last.input_tokens : 0;
+      const cachedRaw = typeof last.cached_input_tokens === 'number' ? last.cached_input_tokens : 0;
+      const cached = Math.min(input, cachedRaw);
+      const output = typeof last.output_tokens === 'number' ? last.output_tokens : 0;
+      if (input > 0 || output > 0) {
+        pendingUsage = {
+          promptTokens: Math.max(0, input - cached),
+          completionTokens: output,
+          cacheReadTokens: cached,
+        };
+        // Attach to last completed request if user turn already flushed.
+        if (!pendingUser && requests.length > 0) {
+          const lastReq = requests[requests.length - 1]!;
+          lastReq.promptTokens = pendingUsage.promptTokens;
+          lastReq.completionTokens = pendingUsage.completionTokens;
+          lastReq.cacheReadTokens = pendingUsage.cacheReadTokens;
+          lastReq.modelId = currentModel;
+          pendingUsage = null;
+        }
+      }
       continue;
     }
 

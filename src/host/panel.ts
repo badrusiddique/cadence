@@ -56,7 +56,15 @@ export class CadencePanel {
           workspaceRoot: this.workspaceRoot,
           redactSensitive: this.redactSensitive,
         };
-        const result = await handleRpc(ctx, msg.method, msg.params || {});
+        const params = { ...(msg.params || {}) };
+        if (msg.method === 'getBudget') {
+          const cfg = vscode.workspace.getConfiguration('cadence');
+          if (typeof params.sku !== 'string') params.sku = cfg.get<string>('budgetSku') ?? 'business';
+          if (typeof params.customCredits !== 'number') {
+            params.customCredits = cfg.get<number>('customBudgetCredits') ?? 1900;
+          }
+        }
+        const result = await handleRpc(ctx, msg.method, params);
         if (msg.method === 'copyMarkdown' && result && typeof result === 'object' && 'markdown' in (result as object)) {
           await vscode.env.clipboard.writeText(String((result as { markdown?: string }).markdown || ''));
         }

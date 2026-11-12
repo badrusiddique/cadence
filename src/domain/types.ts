@@ -55,6 +55,10 @@ export interface SessionRequest {
   completionTokens: number | null;
   cacheReadTokens: number | null;
   cacheWriteTokens: number | null;
+  /** Billed AI credits when logs expose them (1 credit ≈ $0.01). */
+  billedCredits: number | null;
+  /** Billed premium-request count (legacy Copilot billing). */
+  premiumRequests: number | null;
   compaction: CompactionEvent | null;
   todoSnapshot: TodoItem[] | null;
   workType: string;
@@ -173,6 +177,8 @@ export function emptyRequest(partial: Partial<SessionRequest> & Pick<SessionRequ
     completionTokens: null,
     cacheReadTokens: null,
     cacheWriteTokens: null,
+    billedCredits: null,
+    premiumRequests: null,
     compaction: null,
     todoSnapshot: null,
     workType: 'unknown',

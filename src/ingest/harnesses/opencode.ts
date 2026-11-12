@@ -4,6 +4,15 @@ import { emptyRequest, emptySession, type Session } from '../../domain/types';
 import { existsDir, homeDir, walkFiles } from '../paths';
 import { classifyWorkType, hasProfanity, isAllCaps } from '../text';
 
+function coerceTs(value: unknown): number | null {
+  if (typeof value === 'number' && Number.isFinite(value)) return value;
+  if (typeof value === 'string' && value) {
+    const parsed = Date.parse(value);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+  return null;
+}
+
 export function findOpenCodeDirs(): string[] {
   const home = homeDir();
   const bases = [
@@ -42,7 +51,7 @@ function parseOpenCodeJson(filePath: string): Session | null {
   for (const msg of messages) {
     const role = String(msg.role || msg.type || '');
     const text = String(msg.content || msg.text || '');
-    const ts = msg.time?.created || msg.timestamp ? Date.parse(String(msg.time?.created || msg.timestamp)) : null;
+    const ts = coerceTs(msg.time?.created ?? msg.timestamp);
     if (/user/i.test(role) && text) {
       pending = { text, ts };
     } else if (/assistant/i.test(role) && pending) {

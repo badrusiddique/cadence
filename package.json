@@ -2,7 +2,7 @@
   "name": "cadence-insights",
   "displayName": "Cadence: Agent Engineering Insights",
   "description": "Local insights for AI coding assistants. Watch sessions, measure output, fix habits. No telemetry. Logs stay read-only.",
-  "version": "1.2.9",
+  "version": "1.3.0",
   "publisher": "badrusiddique",
   "author": {
     "name": "Badru Siddique"
@@ -191,7 +191,7 @@
           "cadence"
         ],
         "displayName": "Cadence: Budget Estimates",
-        "modelDescription": "Local AI credit/token estimates with model breakdown. Not billing data.",
+        "modelDescription": "Local spend ledger: credits/USD by harness, repo, and model. Billed units when present; otherwise estimates. Not billing data.",
         "inputSchema": {
           "type": "object",
           "properties": {
@@ -476,16 +476,23 @@
             "pro",
             "pro-plus",
             "business",
+            "business-promo",
             "enterprise",
+            "enterprise-promo",
             "custom"
           ],
-          "default": "pro",
-          "description": "Assumed AI credit SKU for Budget estimates. Estimates only, not billing."
+          "default": "business",
+          "description": "Assumed monthly AI credit allowance for Spend ledger. Local estimates only — not billing."
         },
         "cadence.customBudgetCredits": {
           "type": "number",
-          "default": 1000,
+          "default": 1900,
           "description": "Custom monthly credit budget when budgetSku is custom."
+        },
+        "cadence.spendStatusBar": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show month-to-date credit/USD estimate in the status bar (local ledger, not invoice)."
         },
         "cadence.redactSensitive": {
           "type": "boolean",

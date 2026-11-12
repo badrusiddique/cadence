@@ -30,21 +30,31 @@ export interface TokenRate {
 
 export const MODEL_TOKEN_RATES: Record<string, TokenRate> = {
   'gpt-4.1': { input: 2.0, cached: 0.5, output: 8.0 },
+  'gpt-5': { input: 1.75, cached: 0.175, output: 14.0 },
   'gpt-5.1': { input: 1.75, cached: 0.175, output: 14.0 },
   'gpt-5.2': { input: 1.75, cached: 0.175, output: 14.0 },
   'gpt-5.4': { input: 2.5, cached: 0.25, output: 15.0 },
+  'gpt-5.6-sol': { input: 4.0, cached: 0.4, output: 20.0, cacheWrite: 5.0 },
+  'gpt-6.1-sol': { input: 2.0, cached: 0.1, output: 10.0, cacheWrite: 2.5 },
+  'gpt-6-luna': { input: 0.1, cached: 0.01, output: 0.5, cacheWrite: 0.125 },
   'claude-haiku-4.5': { input: 1.0, cached: 0.1, output: 5.0, cacheWrite: 1.25 },
+  'claude-sonnet-4': { input: 3.0, cached: 0.3, output: 15.0, cacheWrite: 3.75 },
   'claude-sonnet-4.5': { input: 3.0, cached: 0.3, output: 15.0, cacheWrite: 3.75 },
+  'claude-opus-4.5': { input: 5.0, cached: 0.5, output: 25.0, cacheWrite: 6.25 },
   'claude-opus-4.6': { input: 5.0, cached: 0.5, output: 25.0, cacheWrite: 6.25 },
+  'claude-opus-5.5': { input: 4.0, cached: 0.2, output: 20.0, cacheWrite: 5.0 },
   'gemini-2.5-pro': { input: 1.25, cached: 0.125, output: 10.0 },
   'gemini-3-pro': { input: 2.0, cached: 0.2, output: 12.0 },
+  'gemini-3-flash': { input: 0.5, cached: 0.05, output: 3.0 },
 };
 
 export const SKU_AI_CREDITS: Record<string, number> = {
   pro: 1000,
   'pro-plus': 3900,
   business: 1900,
+  'business-promo': 3000,
   enterprise: 3900,
+  'enterprise-promo': 7000,
 };
 
 export const LATE_NIGHT_START = 22;

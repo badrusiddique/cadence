@@ -14,6 +14,7 @@ let analyzer: Analyzer = new Analyzer([], new Map(), loadAllSignals({}));
 let output: vscode.OutputChannel;
 let log: CadenceLogger;
 let sidebarProvider: CadenceSidebarProvider | undefined;
+let spendStatus: vscode.StatusBarItem | undefined;
 
 function readEnterpriseConfig() {
   const cfg = vscode.workspace.getConfiguration('cadence');
@@ -23,7 +24,34 @@ function readEnterpriseConfig() {
     offlineUi: cfg.get<boolean>('offlineUi') ?? true,
     maxSessions: cfg.get<number>('maxSessions') ?? 5000,
     maxFilesPerWalk: cfg.get<number>('maxFilesPerWalk') ?? 8000,
+    budgetSku: cfg.get<string>('budgetSku') ?? 'pro',
+    customBudgetCredits: cfg.get<number>('customBudgetCredits') ?? 1000,
+    spendStatusBar: cfg.get<boolean>('spendStatusBar') ?? true,
   };
+}
+
+function refreshSpendStatusBar(): void {
+  if (!spendStatus) return;
+  const ent = readEnterpriseConfig();
+  if (!ent.spendStatusBar) {
+    spendStatus.hide();
+    return;
+  }
+  const sku = ent.budgetSku === 'custom' ? 'custom' : ent.budgetSku;
+  const budget = analyzer.getBudget({}, sku, ent.customBudgetCredits);
+  if (!budget.creditsUsed && !budget.usdEstimate) {
+    spendStatus.text = '$(graph) Cadence · no spend yet';
+    spendStatus.tooltip = 'Open Cadence Spend after Reload Sessions. Local estimates only.';
+    spendStatus.backgroundColor = undefined;
+    spendStatus.show();
+    return;
+  }
+  const cr = budget.creditsUsed.toLocaleString(undefined, { maximumFractionDigits: 0 });
+  spendStatus.text = `$(graph) ${cr} cr · $${budget.usdEstimate.toFixed(2)}`;
+  spendStatus.tooltip = `${budget.disclaimer}\n${budget.pct}% of ${budget.budget} credit allowance · ~est ${budget.estimatedShare}%`;
+  spendStatus.backgroundColor =
+    budget.pct >= 80 ? new vscode.ThemeColor('statusBarItem.warningBackground') : undefined;
+  spendStatus.show();
 }
 
 function escapeHtml(value: string): string {
@@ -302,6 +330,7 @@ async function reload(context: vscode.ExtensionContext, openPanel = false, bustC
         sources: result.sources.length,
         version,
       });
+      refreshSpendStatusBar();
       sidebarProvider?.refresh();
       if (openPanel || CadencePanel.current) {
         CadencePanel.show(context.extensionUri, analyzer, {
@@ -366,9 +395,17 @@ export function activate(context: vscode.ExtensionContext): void {
   registerChatParticipant(context, getAnalyzer);
   registerLanguageModelTools(context, getAnalyzer);
 
+  spendStatus = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100);
+  spendStatus.command = 'cadence.open';
+  context.subscriptions.push(spendStatus);
+  refreshSpendStatusBar();
+
   context.subscriptions.push(
     vscode.window.registerWebviewViewProvider('cadence.overview', sidebarProvider, {
       webviewOptions: { retainContextWhenHidden: true },
+    }),
+    vscode.workspace.onDidChangeConfiguration((e) => {
+      if (e.affectsConfiguration('cadence')) refreshSpendStatusBar();
     }),
   );
 

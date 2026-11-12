@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.3.0 (2026-11-12)
+
+Cost Lens–inspired local **Spend** ledger (not a subscription invoice).
+
+- Pricing precedence: billed AI credits / premium requests → tokens×rate → `~est` model multiplier
+- Spend page: USD + credits, allowance, EOM forecast, by harness / repo / model, cache economics, provenance
+- Status bar month-to-date `credits · $` (`cadence.spendStatusBar`)
+- Ingest: Copilot Chat billed credits, Copilot CLI shutdown nano/token metrics, Codex `token_count`, safer OpenCode timestamps
+- Verified one-by-one with real prompt data across Copilot, Cursor, Claude, Codex, Copilot CLI, OpenCode
+
 ## 1.2.9 (2026-11-12)
 
 Lock harness matrix: isolated real-prompt ingest tests for Copilot Chat, Cursor transcripts, Composer DB, Claude Code, Codex CLI, Copilot CLI, and OpenCode.

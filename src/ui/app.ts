@@ -57,7 +57,7 @@ const NAV: NavGroup[] = [
     title: 'Measure',
     items: [
       { id: 'throughput', label: 'Output', icon: '↗', badge: 'aiLoc' },
-      { id: 'budget', label: 'Burndown', icon: '◌', badge: 'budgetPct' },
+      { id: 'budget', label: 'Spend', icon: '◌', badge: 'budgetPct' },
       { id: 'rhythm', label: 'Patterns', icon: '▦' },
       { id: 'inquiry', label: 'Curiosity', icon: '?' },
       { id: 'flow', label: 'Flow', icon: '∿' },
@@ -806,27 +806,85 @@ async function pageBudget() {
   const data = await query<any>('getBudget');
   state.badges = { ...state.badges, budgetPct: data.pct };
   const daily = data.daily || [];
+  const byHarness = data.byHarness || [];
+  const byRepo = data.byRepo || [];
+  const cache = data.cacheEconomics || {};
+  const forecast = data.forecast || {};
+  const prov = data.provenanceCounts || {};
   queueCharts([
     {
       kind: 'bar',
       id: 'chart-budget',
       labels: daily.map((d: any) => String(d.date).slice(5)),
-      datasets: [{ label: 'Credits', data: daily.map((d: any) => d.credits), color: '#eb6847' }],
+      datasets: [
+        { label: 'USD', data: daily.map((d: any) => d.usd ?? 0), color: '#eb6847' },
+        { label: 'Credits', data: daily.map((d: any) => d.credits), color: '#519eec' },
+      ],
     },
   ]);
+  const fmtUsd = (n: number) => `$${(n ?? 0).toFixed(2)}`;
+  const fmtCr = (n: number) => `${(n ?? 0).toFixed(1)} cr`;
   return html`
     <div class="page">
-      ${header('Burndown', 'Local credit and token estimates for the selected range. Always on.', `${data.pct}% used`)}
+      ${header(
+        'Spend',
+        'Local credit and dollar ledger for the selected range. Billed units when present, else tokens×rate, else ~est.',
+        `${data.pct}% used`,
+      )}
       <div class="banner">${data.disclaimer}</div>
       <div class="metric-row">
-        <div class="metric"><div class="label">Credits used</div><div class="value mono">${data.creditsUsed}</div></div>
-        <div class="metric"><div class="label">Budget</div><div class="value mono">${data.budget}</div></div>
-        <div class="metric"><div class="label">Remaining</div><div class="value mono">${data.remaining}</div></div>
-        <div class="metric"><div class="label">USD est.</div><div class="value mono">$${data.usdEstimate}</div></div>
+        <div class="metric"><div class="label">Spend (USD)</div><div class="value mono">${fmtUsd(data.usdEstimate)}</div></div>
+        <div class="metric"><div class="label">Credits used</div><div class="value mono">${fmtCr(data.creditsUsed)}</div></div>
+        <div class="metric"><div class="label">Allowance</div><div class="value mono">${data.budget}</div></div>
+        <div class="metric"><div class="label">Remaining</div><div class="value mono">${fmtCr(data.remaining)}</div></div>
+      </div>
+      <div class="metric-row">
+        <div class="metric"><div class="label">EOM forecast</div><div class="value mono">${fmtUsd(forecast.usd)}</div>
+          <div class="note">${fmtCr(forecast.credits)} at current pace</div>
+        </div>
+        <div class="metric"><div class="label">~est share</div><div class="value mono">${data.estimatedShare ?? 0}%</div>
+          <div class="note">billed ${prov.billed || 0} · tokens ${prov['token-priced'] || 0} · est ${prov.estimated || 0}</div>
+        </div>
+        <div class="metric"><div class="label">Cache saved</div><div class="value mono">${fmtUsd(cache.savedOnCacheReadsUsd)}</div></div>
+        <div class="metric"><div class="label">Cache write cost</div><div class="value mono">${fmtUsd(cache.paidForCacheWritesUsd)}</div></div>
       </div>
       <section class="panel">
-        <h2>Daily burn</h2>
+        <h2>Daily spend</h2>
         <div class="chart-box"><canvas id="chart-budget"></canvas></div>
+      </section>
+      <section class="panel">
+        <h2>By harness</h2>
+        <table>
+          <thead><tr><th>Harness</th><th>USD</th><th>Credits</th><th>Req</th><th></th></tr></thead>
+          <tbody>
+            ${byHarness.map(
+              (r: any) => html`<tr>
+                <td>${r.key}</td>
+                <td class="mono">${fmtUsd(r.usd)}</td>
+                <td class="mono">${fmtCr(r.credits)}</td>
+                <td class="mono">${r.requests}</td>
+                <td>${r.est ? '~est' : ''}</td>
+              </tr>`,
+            )}
+          </tbody>
+        </table>
+      </section>
+      <section class="panel">
+        <h2>By repository</h2>
+        <table>
+          <thead><tr><th>Repo / workspace</th><th>USD</th><th>Credits</th><th>Req</th><th></th></tr></thead>
+          <tbody>
+            ${byRepo.map(
+              (r: any) => html`<tr>
+                <td>${r.key}</td>
+                <td class="mono">${fmtUsd(r.usd)}</td>
+                <td class="mono">${fmtCr(r.credits)}</td>
+                <td class="mono">${r.requests}</td>
+                <td>${r.est ? '~est' : ''}</td>
+              </tr>`,
+            )}
+          </tbody>
+        </table>
       </section>
       <section class="panel">
         <h2>By model</h2>
@@ -834,7 +892,12 @@ async function pageBudget() {
           <thead><tr><th>Model</th><th>Credits</th><th>USD</th><th>Requests</th></tr></thead>
           <tbody>
             ${Object.entries(data.byModel || {}).map(
-              ([k, v]: any) => html`<tr><td>${k}</td><td class="mono">${v.credits.toFixed?.(2) ?? v.credits}</td><td class="mono">${v.usd.toFixed?.(4) ?? v.usd}</td><td class="mono">${v.requests}</td></tr>`,
+              ([k, v]: any) => html`<tr>
+                <td>${k}${v.estimated ? ' ~est' : ''}</td>
+                <td class="mono">${(v.credits ?? 0).toFixed?.(2) ?? v.credits}</td>
+                <td class="mono">${(v.usd ?? 0).toFixed?.(4) ?? v.usd}</td>
+                <td class="mono">${v.requests}</td>
+              </tr>`,
             )}
           </tbody>
         </table>

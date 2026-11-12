@@ -51,7 +51,7 @@ Treat Cadence fields by provenance:
 |---|---|
 | `observed` | Directly read from disk (doctor roots, raw request counts) |
 | `derived` | Computed from sessions (practice scores, habit triggers) |
-| `inferred` | Estimate (budget credits/USD) — **not billing** |
+| `inferred` | Spend ledger credits/USD (billed units when present, else tokens×rate, else ~est) — **not billing** |
 
 Never present budget numbers as invoices. Prefer `triggeredOnly: true` on habits when answering briefly.
 
