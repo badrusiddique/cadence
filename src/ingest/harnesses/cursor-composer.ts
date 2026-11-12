@@ -9,34 +9,67 @@ import { emptyRequest, emptySession, type Session } from '../../domain/types';
 import { existsDir, homeDir } from '../paths';
 import { classifyWorkType, hasProfanity, isAllCaps } from '../text';
 
-export function findCursorUserDirs(): string[] {
+/** Resolve User dir from extension host globalStorageUri.fsPath (.../User/globalStorage/<extId>). */
+export function userDirFromExtensionStorage(globalStorageFsPath: string): string {
+  return path.resolve(globalStorageFsPath, '..', '..');
+}
+
+function candidateCursorUserDirs(): string[] {
   const home = homeDir();
-  const dirs: string[] = [];
+  const brands = ['Cursor', 'Cursor Nightly', 'Cursor Dev'];
   if (process.platform === 'darwin') {
-    dirs.push(path.join(home, 'Library', 'Application Support', 'Cursor', 'User'));
-  } else if (process.platform === 'win32') {
-    const appdata = process.env.APPDATA || path.join(home, 'AppData', 'Roaming');
-    dirs.push(path.join(appdata, 'Cursor', 'User'));
-  } else {
-    dirs.push(path.join(home, '.config', 'Cursor', 'User'));
+    return brands.map((b) => path.join(home, 'Library', 'Application Support', b, 'User'));
   }
-  return dirs.filter(existsDir);
+  if (process.platform === 'win32') {
+    const appdata = process.env.APPDATA || path.join(home, 'AppData', 'Roaming');
+    return brands.map((b) => path.join(appdata, b, 'User'));
+  }
+  return brands.map((b) => path.join(home, '.config', b, 'User'));
+}
+
+/** Discover Cursor User dirs; `extra` wins for portable/--user-data-dir hosts. */
+export function findCursorUserDirs(extra: string[] = []): string[] {
+  const merged = [...extra, ...candidateCursorUserDirs()];
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const dir of merged) {
+    if (!dir) continue;
+    const resolved = path.resolve(dir);
+    if (seen.has(resolved)) continue;
+    seen.add(resolved);
+    if (existsDir(resolved)) out.push(resolved);
+  }
+  return out;
+}
+
+function sleepSync(ms: number): void {
+  try {
+    Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
+  } catch {
+    const end = Date.now() + ms;
+    while (Date.now() < end) {
+      /* spin */
+    }
+  }
 }
 
 function snapshotDb(dbPath: string): string | null {
-  try {
-    if (!fs.existsSync(dbPath)) return null;
-    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'cadence-cursor-'));
-    const base = path.basename(dbPath);
-    fs.copyFileSync(dbPath, path.join(tmp, base));
-    for (const side of [`${base}-wal`, `${base}-shm`]) {
-      const src = path.join(path.dirname(dbPath), side);
-      if (fs.existsSync(src)) fs.copyFileSync(src, path.join(tmp, side));
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      if (!fs.existsSync(dbPath)) return null;
+      const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'cadence-cursor-'));
+      const base = path.basename(dbPath);
+      fs.copyFileSync(dbPath, path.join(tmp, base));
+      for (const side of [`${base}-wal`, `${base}-shm`]) {
+        const src = path.join(path.dirname(dbPath), side);
+        if (fs.existsSync(src)) fs.copyFileSync(src, path.join(tmp, side));
+      }
+      return path.join(tmp, base);
+    } catch {
+      if (attempt < 2) sleepSync(50);
     }
-    return path.join(tmp, base);
-  } catch {
-    return null;
   }
+  return null;
 }
 
 /** Decode cursorDiskKV.value — Cursor stores UTF-8 JSON as BLOB, not TEXT. */
@@ -215,6 +248,83 @@ function sessionsFromKvRows(composerRows: KvRow[], allBubbleRows: KvRow[]): Sess
     if (session) sessions.push(session);
   }
   return sessions;
+}
+
+function countKvPrefix(dbPath: string, prefix: string): number | null {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { DatabaseSync } = require('node:sqlite') as {
+      DatabaseSync: new (
+        path: string,
+        opts?: { readOnly?: boolean },
+      ) => {
+        prepare: (sql: string) => { all: (...params: unknown[]) => Array<{ n: number }> };
+        close: () => void;
+      };
+    };
+    const snap = snapshotDb(dbPath);
+    if (!snap) return null;
+    const db = new DatabaseSync(snap, { readOnly: true });
+    try {
+      const rows = db.prepare(`SELECT COUNT(*) AS n FROM cursorDiskKV WHERE key LIKE ?`).all(`${prefix}%`);
+      return Number(rows[0]?.n ?? 0);
+    } finally {
+      db.close();
+      try {
+        fs.rmSync(path.dirname(snap), { recursive: true, force: true });
+      } catch {
+        /* ignore */
+      }
+    }
+  } catch {
+    return null;
+  }
+}
+
+export interface ComposerProbeEntry {
+  userDir: string;
+  dbPath: string;
+  exists: boolean;
+  size: number | null;
+  composerRows: number | null;
+  bubbleRows: number | null;
+  sessionsParsed: number;
+  error?: string;
+}
+
+export interface ComposerProbe {
+  userDirs: string[];
+  databases: ComposerProbeEntry[];
+}
+
+/** Diagnostics for which state.vscdb paths were probed and what they contain. */
+export function probeComposerDatabases(userDirs: string[]): ComposerProbe {
+  const databases: ComposerProbeEntry[] = [];
+  for (const userDir of userDirs) {
+    const dbPath = path.join(userDir, 'globalStorage', 'state.vscdb');
+    const entry: ComposerProbeEntry = {
+      userDir,
+      dbPath,
+      exists: false,
+      size: null,
+      composerRows: null,
+      bubbleRows: null,
+      sessionsParsed: 0,
+    };
+    try {
+      if (fs.existsSync(dbPath)) {
+        entry.exists = true;
+        entry.size = fs.statSync(dbPath).size;
+        entry.composerRows = countKvPrefix(dbPath, 'composerData:');
+        entry.bubbleRows = countKvPrefix(dbPath, 'bubbleId:');
+        entry.sessionsParsed = loadCursorComposerSessions([userDir]).length;
+      }
+    } catch (err) {
+      entry.error = err instanceof Error ? err.message : String(err);
+    }
+    databases.push(entry);
+  }
+  return { userDirs: [...userDirs], databases };
 }
 
 function loadWithNodeSqlite(userDirs: string[]): Session[] | null {

@@ -2,7 +2,13 @@ import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { composerToSession, decodeKvValue, loadCursorComposerSessions } from './cursor-composer';
+import {
+  composerToSession,
+  decodeKvValue,
+  findCursorUserDirs,
+  loadCursorComposerSessions,
+  userDirFromExtensionStorage,
+} from './cursor-composer';
 
 const fixtureRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'cadence-composer-'));
 
@@ -111,5 +117,33 @@ describe('Cursor Composer DB', () => {
     expect(sessions[0].workspaceName).toBe('Summary request');
     expect(sessions[0].requests[0].messageText).toContain('summary');
     expect(sessions[0].requests[0].responseText).toContain('local-first');
+  });
+
+  it('userDirFromExtensionStorage walks up from globalStorage/<extId> to User', () => {
+    const globalStorageFsPath = path.join(
+      'C:',
+      'Users',
+      'me',
+      'AppData',
+      'Roaming',
+      'Cursor',
+      'User',
+      'globalStorage',
+      'publisher.cadence-insights',
+    );
+    expect(userDirFromExtensionStorage(globalStorageFsPath)).toBe(
+      path.resolve(globalStorageFsPath, '..', '..'),
+    );
+    expect(path.basename(userDirFromExtensionStorage(globalStorageFsPath))).toBe('User');
+  });
+
+  it('findCursorUserDirs merges extra even when only extra exists', () => {
+    const extraRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'cadence-extra-user-'));
+    try {
+      const dirs = findCursorUserDirs([extraRoot]);
+      expect(dirs.map((d) => path.resolve(d))).toContain(path.resolve(extraRoot));
+    } finally {
+      fs.rmSync(extraRoot, { recursive: true, force: true });
+    }
   });
 });

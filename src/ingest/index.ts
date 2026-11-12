@@ -34,6 +34,8 @@ export function ingestAll(options?: {
   onProgress?: ProgressFn;
   useCache?: boolean;
   limits?: Partial<IngestLimits>;
+  /** Live / portable Cursor User dirs (e.g. from extension globalStorageUri). */
+  cursorUserDirs?: string[];
 }): IngestResult {
   const limits = resolveIngestLimits(options?.limits);
 
@@ -123,7 +125,7 @@ export function ingestAll(options?: {
     {
       name: 'Cursor Composer DB',
       run: () => {
-        const userDirs = findCursorUserDirs();
+        const userDirs = findCursorUserDirs(options?.cursorUserDirs ?? []);
         for (const d of userDirs) sourcePaths.push(path.join(d, 'globalStorage', 'state.vscdb'));
         return loadCursorComposerSessions(userDirs);
       },

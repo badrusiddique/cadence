@@ -466,6 +466,11 @@ async function pageOverview() {
   }
 
   if (data.sessions === 0) {
+    const version = state.meta?.extensionVersion;
+    const diag = state.meta?.ingestDiag as
+      | { databases?: Array<{ dbPath: string; exists: boolean; composerRows: number | null; sessionsParsed: number }> }
+      | undefined;
+    const probed = diag?.databases || [];
     return html`
       <div class="page">
         ${header('Dashboard', 'Waiting for local AI session logs.', 'Empty')}
@@ -475,6 +480,21 @@ async function pageOverview() {
             <h2>No sessions on this machine yet</h2>
             <p>Cadence does not invent sample workspaces unless you turn on <strong>cadence.demoMode</strong>.</p>
             <p class="muted">Cloud Agent chats on cursor.com are not on this machine. Use desktop Cursor Agent/Composer chats (stored in <span class="mono">state.vscdb</span>), then <strong>Cadence: Reload Sessions</strong>.</p>
+            ${version ? html`<p class="muted">Extension <span class="mono">v${version}</span></p>` : null}
+            ${probed.length
+              ? html`<div class="list" style="margin-top:10px;text-align:left">
+                  <p class="muted" style="margin-bottom:6px">Composer DB probe</p>
+                  ${probed.map(
+                    (d) => html`<article class="muted">
+                      <span class="mono">${d.dbPath}</span>
+                      — ${d.exists ? 'exists' : 'missing'}
+                      ${d.exists
+                        ? html` · composerRows ${d.composerRows ?? '?'} · sessionsParsed ${d.sessionsParsed}`
+                        : null}
+                    </article>`,
+                  )}
+                </div>`
+              : null}
           </div>
         </section>
       </div>

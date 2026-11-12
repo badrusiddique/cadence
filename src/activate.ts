@@ -178,14 +178,20 @@ async function reviewPendingTrust(context: vscode.ExtensionContext): Promise<voi
   void vscode.window.showInformationMessage(`Approved ${picked.length} signal file(s).`);
 }
 
-async function reload(context: vscode.ExtensionContext, openPanel = false, bustCache = false): Promise<void> {
+async function reload(context: vscode.ExtensionContext, openPanel = false, bustCache = false): Promise<{
+  sessions: number;
+  version: string;
+  probeSummary: string;
+}> {
   const ent = readEnterpriseConfig();
+  const version = String(context.extension.packageJSON?.version || '');
   log.info('reload start', {
     demoMode: ent.demoMode,
     bustCache,
     redactSensitive: ent.redactSensitive,
     offlineUi: ent.offlineUi,
     maxSessions: ent.maxSessions,
+    version,
   });
   if (bustCache) clearIngestCache();
 
@@ -194,6 +200,9 @@ async function reload(context: vscode.ExtensionContext, openPanel = false, bustC
   if (!trustedWorkspace) {
     log.warn('workspace untrusted; project-layer signals will not load');
   }
+
+  let sessionCount = 0;
+  let probeSummary = 'no Cursor User dirs';
 
   await vscode.window.withProgress(
     {
@@ -215,9 +224,21 @@ async function reload(context: vscode.ExtensionContext, openPanel = false, bustC
         trustedWorkspace,
       });
 
+      const {
+        findCursorUserDirs,
+        loadCursorComposerSessionsAsync,
+        probeComposerDatabases,
+        userDirFromExtensionStorage,
+      } = await import('./ingest/harnesses/cursor-composer');
+
+      const hostUserDir = userDirFromExtensionStorage(context.globalStorageUri.fsPath);
+      const userDirs = findCursorUserDirs([hostUserDir]);
+      log.info('cursor user dirs', { hostUserDir, userDirs });
+
       const result = ingestAll({
         demoMode: ent.demoMode,
         useCache: !bustCache && !ent.demoMode,
+        cursorUserDirs: userDirs,
         limits: {
           maxSessions: ent.maxSessions,
           maxFilesPerWalk: ent.maxFilesPerWalk,
@@ -228,8 +249,7 @@ async function reload(context: vscode.ExtensionContext, openPanel = false, bustC
       let sessions = result.sessions;
       let workspaces = result.workspaces;
       try {
-        const { loadCursorComposerSessionsAsync } = await import('./ingest/harnesses/cursor-composer');
-        const composerSessions = await loadCursorComposerSessionsAsync();
+        const composerSessions = await loadCursorComposerSessionsAsync(userDirs);
         if (composerSessions.length > 0) {
           const byId = new Map(sessions.map((s) => [s.sessionId, s] as const));
           for (const s of composerSessions) byId.set(s.sessionId, s);
@@ -251,12 +271,25 @@ async function reload(context: vscode.ExtensionContext, openPanel = false, bustC
           error: err instanceof Error ? err.message : String(err),
         });
       }
+
+      const probe = probeComposerDatabases(userDirs);
+      log.info('composer probe', { probe });
+      probeSummary =
+        probe.databases.length === 0
+          ? 'no Cursor User dirs'
+          : probe.databases
+              .map((d) => `${d.dbPath} ${d.exists ? 'exists' : 'missing'}`)
+              .join('; ');
+
       analyzer = new Analyzer(sessions, workspaces, signals);
+      analyzer.setIngestDiag(probe, version);
+      sessionCount = sessions.length;
       for (const err of result.errors) log.warn(err.message, { source: err.source });
       log.info('reload complete', {
         sessions: sessions.length,
         signals: signals.length,
         sources: result.sources.length,
+        version,
       });
       sidebarProvider?.refresh();
       if (openPanel || CadencePanel.current) {
@@ -269,6 +302,8 @@ async function reload(context: vscode.ExtensionContext, openPanel = false, bustC
       }
     },
   );
+
+  return { sessions: sessionCount, version, probeSummary };
 }
 
 export function activate(context: vscode.ExtensionContext): void {
@@ -284,8 +319,19 @@ export function activate(context: vscode.ExtensionContext): void {
       await reload(context, true, false);
     }),
     vscode.commands.registerCommand('cadence.reload', async () => {
-      await reload(context, Boolean(CadencePanel.current), true);
-      void vscode.window.showInformationMessage('Cadence reloaded session data.');
+      const { sessions, version, probeSummary } = await reload(context, Boolean(CadencePanel.current), true);
+      const label = version ? `Cadence v${version}` : 'Cadence';
+      if (sessions > 0) {
+        void vscode.window.showInformationMessage(`${label}: loaded ${sessions} sessions.`);
+      } else {
+        const choice = await vscode.window.showWarningMessage(
+          `${label}: 0 sessions. Checked: ${probeSummary}. Cloud Agent chats on cursor.com are not local.`,
+          'Show Output',
+        );
+        if (choice === 'Show Output') {
+          void vscode.commands.executeCommand('cadence.showOutput');
+        }
+      }
     }),
     vscode.commands.registerCommand('cadence.exportSummary', async () => {
       await reload(context, false, false);

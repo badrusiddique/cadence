@@ -27,6 +27,9 @@ import {
 import { buildSafePredicate } from './predicate';
 
 export class Analyzer {
+  private ingestDiag: unknown = null;
+  private extensionVersion = '';
+
   constructor(
     private sessions: Session[],
     private workspaces: Map<string, Workspace>,
@@ -40,6 +43,11 @@ export class Analyzer {
 
   setSignals(signals: SignalDefinition[]): void {
     this.signals = signals;
+  }
+
+  setIngestDiag(d: unknown, extensionVersion?: string): void {
+    this.ingestDiag = d;
+    if (extensionVersion != null) this.extensionVersion = extensionVersion;
   }
 
   private scoped(filter?: DateFilter): Session[] {
@@ -68,6 +76,8 @@ export class Analyzer {
       currentWorkspaceId,
       latestActivityAt: latest > 0 ? latest : Date.now(),
       dateRanges: ['7d', '28d', '90d', '180d', 'all'] as const,
+      extensionVersion: this.extensionVersion || undefined,
+      ingestDiag: this.ingestDiag ?? undefined,
     };
   }
 

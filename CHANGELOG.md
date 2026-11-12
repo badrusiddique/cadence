@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.2.5 (2026-11-12)
+
+Discover the live Cursor User dir from the extension host and surface Composer DB diagnostics.
+
+- Derive User from `context.globalStorageUri` (`…/User/globalStorage/<extId>` → parent.parent) so portable/`--user-data-dir` installs work
+- Probe `state.vscdb` paths (exists, composer/bubble rows, sessionsParsed); log probe to Output; show version + probe on empty UI
+- Reload toast: success when sessions load, warning with Show Output when 0 sessions
+- Retry `state.vscdb` snapshot copy 3× (Windows lock)
+
 ## 1.2.4 (2026-11-12)
 
 Fix Cursor Local Agent ingest when `cursorDiskKV.value` is BLOB.
